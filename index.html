@@ -50,7 +50,7 @@
         "address": { "@type": "PostalAddress", "addressLocality": "Spring", "addressRegion": "TX", "postalCode": "77380" } }
     ],
     "areaServed": ["Barrington IL", "Barrington Hills IL", "South Barrington IL", "North Barrington IL", "Inverness IL", "Lake Zurich IL", "Deer Park IL", "Palatine IL", "Arlington Heights IL", "Hoffman Estates IL", "Crystal Lake IL", "Spring TX", "The Woodlands TX"],
-    "knowsAbout": ["Roofing", "Siding", "Gutters", "Windows and Doors", "Interior Restoration", "Wallpaper and Paint", "Public Adjusting", "Storm Damage Insurance Claims"],
+    "knowsAbout": ["Roofing", "Siding", "Gutters", "Windows and Doors", "Interior Restoration", "Wallpaper and Paint", "Storm Damage Insurance Claims", "Scope of loss documentation"],
     "image": "https://www.raccoonrestoration.com/assets/og.png",
     "logo": "https://www.raccoonrestoration.com/assets/logo.svg",
     "priceRange": "$$",
@@ -83,7 +83,7 @@
         { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Windows and Doors" } },
         { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Interior Restoration" } },
         { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Wallpaper and Paint" } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Public Adjusting and Claim Advocacy" } }
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Storm damage documentation and claim coordination" } }
       ]
     },
     "sameAs": [
@@ -185,6 +185,7 @@
   <div class="mobile-menu" id="mobile-menu" hidden>
     <nav aria-label="Mobile">
       <ol class="mobile-nav-list">
+        <li><a href="#about"><em>01</em> About</a></li>
         <li><a href="#services"><em>02</em> Services</a></li>
         <li><a href="#restoration"><em>03</em> Restoration</a></li>
         <li><a href="#process"><em>04</em> Process</a></li>
@@ -303,12 +304,12 @@
           <h2 class="visually-hidden" id="about-title">About Raccoon Restoration</h2>
         </div>
         <blockquote class="manifesto-quote reveal">
-          <p>We don't just build projects. We build <span class="hl">trust</span>, lasting relationships, and a legacy of excellence.</p>
-          <cite>Our mission, and our measure</cite>
+          <p>Somewhere in a policy nobody has read since closing, there is a number that decides how this <span class="hl">ends</span>.</p>
+          <cite>Why we exist</cite>
         </blockquote>
         <div class="manifesto-cols">
-          <p class="reveal">Most homeowners meet us on the worst week of their year. The roof is open, the ceiling is stained, and somewhere in a policy nobody has read since closing there is a number that decides how this ends. We are the people who read it, photograph what the storm actually did, and sit across the table from the carrier until the two match.</p>
-          <p class="reveal">That is the whole business: document honestly, argue well, then build it back with tradesmen who would put their own name on the ridge. We will tell you when there is no damage. We will tell you when the first offer is short. And we will still be answering the phone about that roof in eight years, because the commitment doesn't end when the dumpster leaves.</p>
+          <p class="reveal">Most homeowners meet us on the worst week of their year. The roof is open, the ceiling is stained, and that number is about to be decided by whoever documents the loss most carefully. So we read the policy, photograph what the storm actually did, and bring in licensed public adjusters to sit across the table from the carrier until the paperwork matches the damage.</p>
+          <p class="reveal">That is the whole business: document honestly, argue well, then build it back with tradesmen who would put their own name on the ridge. We will tell you when there is no damage. We will tell you when the first offer is short. And we will still be answering the phone about that roof in eight years — because our commitment doesn't end when the work is done, which is the plainest way we know to say we're setting a gold standard in craftsmanship, integrity, and customer care.</p>
         </div>
       </div>
     </section>
@@ -424,6 +425,9 @@
             </div>
           </div>
           <p class="storm-scroll-hint" aria-hidden="true">Scroll</p>
+          <!-- an exit from a multi-viewport scroll track, for keyboard users
+               and anyone who would rather not sit through it -->
+          <a class="storm-skip" href="#process">Skip the sequence</a>
         </div>
       </div>
 
@@ -433,7 +437,7 @@
         <div class="section-head reveal">
           <span class="section-no">03 / Restoration</span>
           <h2 class="section-title" id="storm-title">“Good as new”<br>is the <span class="hl">floor.</span></h2>
-          <p class="section-intro">Drag the divider. The distance between “storm claim closed” and “home actually restored” is everything we do.</p>
+          <p class="section-intro">Now take it yourself. Drag the divider — the distance between “storm claim closed” and “home actually restored” is everything we do.</p>
         </div>
 
         <div class="ba-wrap reveal">
@@ -589,8 +593,9 @@
         <form class="check-tool reveal" id="check-tool" novalidate>
           <div class="check-field">
             <label for="c-zip">1 — Your ZIP code</label>
+            <p class="field-hint" id="h-zip">Only used to check whether you're in our service area. We won't guess your storm history from it — that takes a look at the actual roof.</p>
             <input id="c-zip" name="zip" type="text" inputmode="numeric" pattern="[0-9]{5}"
-                   maxlength="5" autocomplete="postal-code" placeholder="60010">
+                   maxlength="5" autocomplete="postal-code" placeholder="60010" aria-describedby="h-zip">
           </div>
 
           <fieldset class="check-field">
@@ -721,7 +726,7 @@
           </details>
           <details class="faq-item reveal">
             <summary>What does a public adjuster actually do?</summary>
-            <div class="faq-body"><p>The insurance company's adjuster works for the insurance company. A licensed public adjuster works for <em>you</em> — documenting the full scope of loss, filing and managing the claim, and negotiating the settlement. Policyholders with professional representation routinely recover settlements that reflect the true cost of restoration rather than the first offer.</p></div>
+            <div class="faq-body"><p>The insurance company's adjuster works for the insurance company. A licensed public adjuster works for <em>you</em> — documenting the full scope of loss, filing and managing the claim, and negotiating the settlement. The practical difference is documentation: a claim argued from a complete, measured scope of loss is a different conversation than one argued from a first offer.</p></div>
           </details>
           <details class="faq-item reveal">
             <summary>How much does an inspection cost?</summary>
@@ -783,20 +788,21 @@
             <div class="field">
               <label for="f-name">Name</label>
               <input id="f-name" name="name" type="text" autocomplete="name"
-                     required aria-describedby="e-name">
+                     required>
               <p class="field-error" id="e-name" hidden><span aria-hidden="true">!</span> Please tell us your name.</p>
             </div>
             <div class="field">
               <label for="f-phone">Phone</label>
               <input id="f-phone" name="phone" type="tel" autocomplete="tel"
-                     required aria-describedby="e-phone">
+                     inputmode="tel" pattern="[0-9 ()+.\-]{7,}"
+                     required>
               <p class="field-error" id="e-phone" hidden><span aria-hidden="true">!</span> A number we can reach you on.</p>
             </div>
           </div>
           <div class="field">
             <label for="f-email">Email</label>
             <input id="f-email" name="email" type="email" autocomplete="email"
-                   required aria-describedby="e-email">
+                   required>
             <p class="field-error" id="e-email" hidden><span aria-hidden="true">!</span> That email address doesn't look right.</p>
           </div>
           <div class="field">

@@ -55,8 +55,11 @@
     w = Math.max(1, rect.width);
     h = Math.max(1, rect.height);
     dpr = Math.min(window.devicePixelRatio || 1, 2); // cap DPR: fill rate, not detail
-    canvas.width = Math.round(w * dpr);
-    canvas.height = Math.round(h * dpr);
+    var bw = Math.round(w * dpr), bh = Math.round(h * dpr);
+    if (canvas.width !== bw || canvas.height !== bh) {
+      canvas.width = bw;
+      canvas.height = bh;   // reallocates the backing store, so only when it changed
+    }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     /* Wide screens: the scene occupies the channel between the copy column and
@@ -64,14 +67,16 @@
        sit over the top with a scrim behind it. */
     narrow = w < 940;
     if (!narrow) {
-      scale = Math.min((w * 0.46) / VW, (h * 0.78) / VH);
-      offX = w - VW * scale - w * 0.14;
-      offY = (h - VH * scale) / 2;
+      /* The rail now sits along the bottom, so the drawing gets the whole
+         right-hand channel instead of being squeezed to 46% of the stage. */
+      scale = Math.min((w * 0.56) / VW, (h * 0.86) / VH);
+      offX = w - VW * scale - w * 0.05;
+      offY = (h - VH * scale) / 2 - h * 0.03;
     } else {
-      // narrow: copy sits in the upper third, scene anchored to the bottom
-      scale = Math.min((w * 0.98) / VW, (h * 0.46) / VH);
+      // narrow: copy in the upper third, scene above the rail and the call bar
+      scale = Math.min((w * 0.86) / VW, (h * 0.40) / VH);
       offX = (w - VW * scale) / 2;
-      offY = h - VH * scale - h * 0.14;
+      offY = h - VH * scale - h * 0.20;
     }
     rendered = -1;
   }
@@ -82,6 +87,8 @@
 
   /* ---------- tiny helpers ---------- */
   function clamp(n, a, b) { return n < a ? a : n > b ? b : n; }
+  // JS % keeps the sign of the dividend; weather needs a true positive wrap
+  function wrap(v, m) { return ((v % m) + m) % m; }
   function lerp(a, b, t) { return a + (b - a) * t; }
   // normalised progress inside a sub-range, eased
   function seg(p, from, to) { return clamp((p - from) / (to - from), 0, 1); }
@@ -161,8 +168,14 @@
   // scattered across the main roof triangle (150,252)-(300,116)-(450,252)
   var TABS = [];
   (function seedTabs() {
-    var seedRand = 0.31; // deterministic pseudo-random so the scene is stable
-    function rnd() { seedRand = (seedRand * 9301 + 49297) % 233280 / 233280; return seedRand; }
+    /* Integer LCG state. Keeping the *normalised* value as state collapses the
+       map to a fixed point (~0.2201) within three draws, which put all 16 tabs
+       at the same coordinates with the same velocity — one shingle, drawn 16x. */
+    var seed = 20260724;
+    function rnd() {
+      seed = (seed * 1103515245 + 12345) & 0x7FFFFFFF;
+      return seed / 0x7FFFFFFF;
+    }
     for (var k = 0; k < 16; k++) {
       var a = rnd(), b = rnd();
       if (a + b > 1) { a = 1 - a; b = 1 - b; }
@@ -171,7 +184,7 @@
       var y = 252 + a * (116 - 252) + b * (252 - 252);
       TABS.push({
         x: x, y: y,
-        detach: 0.12 + rnd() * 0.72,          // when in Act II it lets go
+        detach: 0.30 + rnd() * 0.60,          // when in Act II it lets go
         vx: 1.4 + rnd() * 2.6,
         vy: -0.7 - rnd() * 1.1,
         rot: (rnd() - 0.5) * 0.5
@@ -180,13 +193,14 @@
   })();
 
   /* ---------- scope-of-loss callouts drawn in Act III ---------- */
+  // ly values are spaced >= 44 apart per side so labels and their rules never stack
   var CALLOUTS = [
-    { x: 232, y: 196, lx: 44,  ly: 128, t: 'HAIL BRUISING — N SLOPE' },
-    { x: 356, y: 168, lx: 566, ly: 96,  t: 'CREASED TABS — 14 SQ' },
-    { x: 344, y: 140, lx: 566, ly: 132, t: 'RIDGE CAP — 42 LF' },
-    { x: 452, y: 320, lx: 566, ly: 300, t: 'STEP FLASHING FAILURE' },
+    { x: 232, y: 196, lx: 44,  ly: 120, t: 'HAIL BRUISING — N SLOPE' },
+    { x: 356, y: 168, lx: 566, ly: 92,  t: 'CREASED TABS — 14 SQ' },
+    { x: 344, y: 140, lx: 566, ly: 150, t: 'RIDGE CAP — 42 LF' },
+    { x: 452, y: 320, lx: 566, ly: 292, t: 'STEP FLASHING FAILURE' },
     { x: 300, y: 264, lx: 44,  ly: 300, t: 'DECK SATURATION — 2 SHT' },
-    { x: 500, y: 330, lx: 566, ly: 360, t: 'GUTTER — 38 LF' }
+    { x: 500, y: 330, lx: 566, ly: 366, t: 'GUTTER — 38 LF' }
   ];
 
   /* =========================================================================
@@ -208,8 +222,8 @@
     // dawn warms the horizon
     bot = [lerp(bot[0], 46, dawnT), lerp(bot[1], 33, dawnT), lerp(bot[2], 14, dawnT)];
 
-    g.addColorStop(0, 'rgb(' + top.map(Math.round).join(',') + ')');
-    g.addColorStop(1, 'rgb(' + bot.map(Math.round).join(',') + ')');
+    g.addColorStop(0, 'rgb(' + (top[0] | 0) + ',' + (top[1] | 0) + ',' + (top[2] | 0) + ')');
+    g.addColorStop(1, 'rgb(' + (bot[0] | 0) + ',' + (bot[1] | 0) + ',' + (bot[2] | 0) + ')');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
   }
@@ -382,8 +396,8 @@
     ctx.beginPath();
     for (var i = 0; i < count; i++) {
       var d = RAIN[i];
-      var y = (d.y + time * d.sp * 60) % (VH + 80) - 40;
-      var x = (d.x - time * 34) % (VW + 120) - 60;
+      var y = wrap(d.y + time * d.sp * 60, VH + 80) - 40;
+      var x = wrap(d.x - time * 34, VW + 120) - 60;
       ctx.moveTo(vx(x), vy(y));
       ctx.lineTo(vx(x - 9), vy(y + d.len));
     }
@@ -396,8 +410,8 @@
       ctx.fillStyle = '#D6DCE2';
       for (var k = 0; k < hc; k++) {
         var s = HAIL[k];
-        var hy = (s.y + time * s.sp * 60) % (VH + 60) - 30;
-        var hx = (s.x - time * 26 + Math.sin(time * 2 + s.sw) * 10) % (VW + 100) - 50;
+        var hy = wrap(s.y + time * s.sp * 60, VH + 60) - 30;
+        var hx = wrap(s.x - time * 26 + Math.sin(time * 2 + s.sw) * 10, VW + 100) - 50;
         ctx.beginPath();
         ctx.arc(vx(hx), vy(hy), vs(s.r), 0, Math.PI * 2);
         ctx.fill();
@@ -464,11 +478,15 @@
       var alpha = isTop ? 0.95 : 0.9 * settle;
       if (alpha <= 0.01) return;
       var e = ease(a);
-      // sweep from eave up to ridge on both planes
+      /* Offsets must run PERPENDICULAR to each roof plane, not straight down —
+         offsetting vertically pushed the strokes outside the silhouette.
+         Left plane (150,252)->(300,116): unit perp into the roof is
+         (0.671, 0.740); the right plane mirrors it. */
+      var px = 0.671 * L.off, py = 0.740 * L.off;
       var lx = lerp(150, 300, e), ly = lerp(252, 116, e);
       var rx = lerp(450, 300, e), ry = lerp(252, 116, e);
-      line([150 + L.off * 0.5, 252 + L.off, lx + L.off * 0.5, ly + L.off], L.color, 2.6, alpha);
-      line([450 - L.off * 0.5, 252 + L.off, rx - L.off * 0.5, ry + L.off], L.color, 2.6, alpha);
+      line([150 + px, 252 + py, lx + px, ly + py], L.color, 2.6, alpha);
+      line([450 - px, 252 + py, rx - px, ry + py], L.color, 2.6, alpha);
     });
 
     // the layer being installed names itself, clearing before the raccoon lands
@@ -483,22 +501,49 @@
     }
   }
 
-  /* The raccoon: sheltering under the eave in the storm, on the ridge at the end */
+  /* The raccoon: sheltering under the eave in the storm, on the ridge at the end.
+     Drawn at the same line weight as the house so it reads as part of the same
+     illustration rather than a sticker on top of it. */
   function drawRaccoon(x, y, s, alpha, color) {
     if (alpha <= 0) return;
     var c = color || INK;
-    // body
-    poly([x - 11 * s, y, x + 11 * s, y, x + 8 * s, y - 13 * s, x - 8 * s, y - 13 * s], c, null, 1.6, alpha);
-    // head
-    circle(x, y - 19 * s, 7 * s, c, null, 1.6, alpha);
+    var lw = 2.0;
+
+    // haunches + back
+    poly([x - 10 * s, y, x + 9 * s, y, x + 11 * s, y - 9 * s, x + 7 * s, y - 15 * s,
+          x - 7 * s, y - 15 * s, x - 11 * s, y - 8 * s], c, null, lw, alpha);
+    // front legs
+    line([x - 5 * s, y - 4 * s, x - 5 * s, y], c, lw, alpha * 0.9);
+    line([x + 3 * s, y - 4 * s, x + 3 * s, y], c, lw, alpha * 0.9);
+
+    // head with a snout, not a plain circle
+    poly([x - 7 * s, y - 18 * s, x - 4 * s, y - 24 * s, x + 4 * s, y - 24 * s,
+          x + 7 * s, y - 18 * s, x + 4 * s, y - 13 * s, x - 4 * s, y - 13 * s],
+         c, null, lw, alpha);
+    line([x, y - 13 * s, x, y - 15.5 * s], c, lw, alpha * 0.8);   // muzzle line
+    circle(x, y - 12.4 * s, 0.9 * s, null, c, 0, alpha);           // nose
+
     // ears
-    poly([x - 7 * s, y - 24 * s, x - 2 * s, y - 24 * s, x - 5 * s, y - 30 * s], c, null, 1.4, alpha);
-    poly([x + 2 * s, y - 24 * s, x + 7 * s, y - 24 * s, x + 5 * s, y - 30 * s], c, null, 1.4, alpha);
-    // mask band — the brand mark, at raccoon scale
-    line([x - 7 * s, y - 19 * s, x + 7 * s, y - 19 * s], AMBER, 3 * s, alpha);
-    // tail with rings
-    line([x + 10 * s, y - 4 * s, x + 20 * s, y - 10 * s], c, 2.4 * s, alpha);
-    line([x + 15 * s, y - 5 * s, x + 16 * s, y - 9 * s], c, 1.2 * s, alpha * 0.8);
+    poly([x - 7 * s, y - 22 * s, x - 3 * s, y - 24.5 * s, x - 5.5 * s, y - 28 * s], c, null, lw, alpha);
+    poly([x + 3 * s, y - 24.5 * s, x + 7 * s, y - 22 * s, x + 5.5 * s, y - 28 * s], c, null, lw, alpha);
+
+    // the mask — the brand mark at raccoon scale
+    line([x - 7 * s, y - 19 * s, x + 7 * s, y - 19 * s], AMBER, 4.6 * s, alpha);
+    circle(x - 3.2 * s, y - 19 * s, 1.1 * s, null, GRAPHITE, 0, alpha);
+    circle(x + 3.2 * s, y - 19 * s, 1.1 * s, null, GRAPHITE, 0, alpha);
+
+    // ringed tail
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = c;
+    ctx.lineWidth = Math.max(0.8, vs(lw * 1.6 * s));
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(vx(x + 10 * s), vy(y - 4 * s));
+    ctx.quadraticCurveTo(vx(x + 22 * s), vy(y - 6 * s), vx(x + 21 * s), vy(y - 18 * s));
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    line([x + 15.5 * s, y - 3.2 * s, x + 17 * s, y - 7.4 * s], AMBER, lw * 0.9 * s, alpha * 0.9);
+    line([x + 21.6 * s, y - 9 * s, x + 18.4 * s, y - 11.4 * s], AMBER, lw * 0.9 * s, alpha * 0.9);
   }
 
   /* =========================================================================
@@ -513,9 +558,8 @@
     var rebuildT = seg(p, 0.80, 1.0);         // assembly rebuilds
     var weatherOut = 1 - seg(p, 0.48, 0.58);  // weather clears for the claim
 
-    ctx.fillStyle = GRAPHITE;
-    ctx.fillRect(0, 0, w, h);
-    drawSky(p);
+    drawSky(p); // opaque gradient — no need to clear first
+
     drawGrid(blueprintT * (1 - seg(p, 0.86, 1)) );
     drawMoonSun(p);
 
@@ -529,7 +573,10 @@
     drawShingleCourses(p, roofColor, (1 - stormT) * (1 - blueprintT) + rebuildT * 0.6);
 
     drawTornTabs(stormT, blueprintT);
-    drawDamage(stormT, rebuildT);
+    /* Damage clears on its own ramp, finishing before the assembly does — the
+       tarp and boarded window coming off is the first sign of restoration, not
+       something that lingers over a half-rebuilt roof. */
+    drawDamage(stormT, seg(p, 0.74, 0.86));
 
     drawWeather(stormT * weatherOut, hailT * weatherOut, time);
 
@@ -539,11 +586,12 @@
 
     drawRebuild(rebuildT);
 
-    // raccoon: shelters at the eave mid-storm, tops out on the ridge at the end
-    var shelter = seg(p, 0.34, 0.44) * (1 - seg(p, 0.50, 0.56));
-    if (shelter > 0) drawRaccoon(206, 500, 1, shelter * 0.9);
-    var perched = seg(p, 0.92, 1);
-    if (perched > 0) drawRaccoon(300, 112, 1.05, perched);
+    /* Raccoon: shelters against the wall mid-storm, tops out on the ridge at the
+       end. Drawn large enough to actually read — at s=1 it was a ~26px scribble. */
+    var shelter = seg(p, 0.28, 0.38) * (1 - seg(p, 0.52, 0.60));
+    if (shelter > 0) drawRaccoon(140, 500, 2.3, shelter);
+    var perched = seg(p, 0.88, 0.96);
+    if (perched > 0) drawRaccoon(300, 108, 2.1, perched);
 
     // final stamp
     var stamp = seg(p, 0.94, 1);

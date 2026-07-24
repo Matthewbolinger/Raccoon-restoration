@@ -32,8 +32,10 @@
   if (toggle && menu) {
     var FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+    var callBarEl = document.getElementById('call-bar');
+    var skipLink = document.querySelector('.skip-link');
     var setInert = function (on) {
-      [main, footer, header].forEach(function (el) {
+      [main, footer, header, callBarEl, skipLink].forEach(function (el) {
         if (!el) return;
         if (on) { el.setAttribute('inert', ''); }
         else { el.removeAttribute('inert'); }
@@ -155,7 +157,14 @@
     var field = input.closest('.field');
     var msg = field && field.querySelector('.field-error');
     if (field) field.classList.toggle('invalid', show);
-    if (msg) msg.hidden = !show;
+    if (msg) {
+      msg.hidden = !show;
+      /* Only describe the field while the error is actually showing. A
+         permanent aria-describedby pointing at hidden text gets spoken on
+         every focus, before anything is wrong. */
+      if (show) input.setAttribute('aria-describedby', msg.id);
+      else input.removeAttribute('aria-describedby');
+    }
     input.setAttribute('aria-invalid', show ? 'true' : 'false');
   }
 
@@ -176,7 +185,7 @@
             : invalid.length + ' fields still need attention.';
           note.classList.remove('sent');
         }
-        invalid[0].focus();
+        window.setTimeout(function () { invalid[0].focus(); }, 120);
         return;
       }
 
@@ -206,9 +215,14 @@
       }
     });
 
+    var NOTE_DEFAULT = note ? note.textContent : '';
     form.addEventListener('input', function (e) {
-      if (e.target.matches('[required]') && e.target.checkValidity()) {
-        showError(e.target, false);
+      if (!e.target.matches('[required]')) return;
+      if (e.target.checkValidity()) showError(e.target, false);
+      // restore the reassurance line once nothing is outstanding
+      var stillInvalid = form.querySelectorAll('.field.invalid').length;
+      if (!stillInvalid && note && !note.classList.contains('sent')) {
+        note.textContent = NOTE_DEFAULT;
       }
     });
   }
@@ -276,7 +290,7 @@
 
       checkResult.innerHTML =
         '<div class="check-card is-' + level + '">' +
-          '<span class="check-verdict">' + headline + '</span>' +
+          '<h3 class="check-verdict" tabindex="-1">' + headline + '</h3>' +
           '<p>' + body + '</p>' +
           area +
           '<div class="check-actions">' +
@@ -287,6 +301,9 @@
         '</div>';
 
       checkResult.classList.add('has-result');
+      // move focus to the verdict so keyboard users land on the answer
+      var verdict = checkResult.querySelector('.check-verdict');
+      if (verdict) verdict.focus({ preventScroll: true });
     });
   }
 
