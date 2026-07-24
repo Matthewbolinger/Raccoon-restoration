@@ -1,11 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 72" role="img" aria-label="Raccoon Restoration">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" role="img" aria-label="Raccoon Restoration">
+  <rect width="320" height="72" fill="#0E1114"/>
   <g>
-    <path fill="#1B1610" d="M14 58 L14 30 L24 14 L34 25 L44 14 L54 30 L54 58 Z"/>
-    <path fill="#A24E1B" d="M14 33 H54 V46 H14 Z"/>
-    <circle fill="#F7F2E9" cx="26" cy="39.5" r="3.4"/>
-    <circle fill="#F7F2E9" cx="42" cy="39.5" r="3.4"/>
-    <path fill="#F7F2E9" d="M30.6 58 V51.4 A3.4 3.4 0 0 1 37.4 51.4 V58 Z"/>
+    <path fill="#F4F5F6" d="M14 58 L14 30 L24 14 L34 25 L44 14 L54 30 L54 58 Z"/>
+    <path fill="#FFB200" d="M14 33 H54 V46 H14 Z"/>
+    <circle fill="#0E1114" cx="26" cy="39.5" r="3.4"/>
+    <circle fill="#0E1114" cx="42" cy="39.5" r="3.4"/>
+    <path fill="#0E1114" d="M30.6 58 V51.4 A3.4 3.4 0 0 1 37.4 51.4 V58 Z"/>
   </g>
-  <text x="68" y="40" font-family="Fraunces, Georgia, serif" font-size="26" font-weight="600" fill="#1B1610">Raccoon</text>
-  <text x="69" y="56" font-family="ui-monospace, Menlo, monospace" font-size="9.5" letter-spacing="6.5" fill="#A24E1B">RESTORATION</text>
+  <text x="68" y="39" font-family="Archivo, Helvetica Neue, Arial, sans-serif" font-size="25" font-weight="800" fill="#F4F5F6" letter-spacing="-0.3">RACCOON</text>
+  <text x="69" y="55" font-family="ui-monospace, Menlo, monospace" font-size="9" letter-spacing="7" fill="#FFB200">RESTORATION</text>
 </svg>

@@ -63,11 +63,11 @@
     revealEls.forEach(function (el) { el.classList.add('in'); });
   }
 
-  /* ---------- Hero line-art draw-on ---------- */
-  var plate = document.querySelector('.hero-plate');
-  if (plate && !reducedMotion.matches) {
-    // small delay so the draw starts as the hero settles in
-    window.setTimeout(function () { plate.classList.add('drawing'); }, 250);
+  /* ---------- Hero roof-assembly build-on ---------- */
+  var fig = document.querySelector('.hero-fig');
+  if (fig && !reducedMotion.matches) {
+    // small delay so layers assemble as the hero settles in
+    window.setTimeout(function () { fig.classList.add('drawing'); }, 250);
   }
 
   /* ---------- Before / after slider ---------- */
