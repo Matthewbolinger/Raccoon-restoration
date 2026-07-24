@@ -44,7 +44,7 @@ continuous scene:
 
 Built in **Canvas 2D, deliberately not WebGL**: the art direction is line drawing, so
 vector strokes are the medium; it holds 60 fps; and it adds no dependency to a page
-that ships in ~200 KB. It is pure progressive enhancement — without canvas, with
+that ships in ~270 KB. It is pure progressive enhancement — without canvas, with
 `prefers-reduced-motion`, with Save-Data, or without JS at all, the static before/after
 comparison is what ships, and the scope-of-loss list is real text either way.
 
@@ -73,12 +73,12 @@ python3 -m http.server 8000     # then http://localhost:8000
 
 | Criterion | How |
 |---|---|
-| **Design** | Committed art direction (graphite + hi-vis amber), signage-grade display type, hard-edged grid with 2px rules instead of soft cards — no stock photos, no template look. |
+| **Design** | Committed art direction (graphite + hi-vis amber), signage-grade variable display type, hard-edged 2px-rule grids instead of soft cards, and a bespoke line-drawing system that carries the whole site — no stock photos, no template look. |
 | **Creativity** | **The Storm Sequence** — a scroll-scrubbed four-act canvas narrative; dual-read raccoon/house logo paid off in the sequence and the 404; annotated roof-assembly cutaway; pitch-angled section edge. |
 | **Usability** | Persistent mobile call bar (tap-to-call + CTA in thumb reach), sticky desktop nav with number and CTA, the Storm Check tool, one-thumb mobile menu, FAQ accordions, per-field form validation. |
 | **Content** | Real services, mission, credentials, service areas, and honest FAQ answers a homeowner actually has mid-claim. |
 | **Accessibility** | **axe-core: zero violations** across desktop, mobile, menu-open, reduced-motion and 404 (incl. best-practice rules). Focus trap + `inert` on the mobile overlay, context-aware focus rings, per-field errors with `aria-invalid`/`aria-describedby`, 16px controls, 44px targets, honest slider announcements. |
-| **Performance** | ~200 KB total page weight, zero third-party requests, self-hosted variable fonts (preloaded, `font-display: swap`), vector-only graphics, dependency-free JS. Storm Sequence measured at **60 fps**; canvas loop is IntersectionObserver-gated, DPR-capped, and paused on `visibilitychange`. |
+| **Performance** | ~267 KB total page weight, zero third-party requests, self-hosted variable fonts (preloaded, `font-display: swap`), vector-only graphics, dependency-free JS. Storm Sequence measured at **60 fps**; canvas loop is IntersectionObserver-gated, DPR-capped, and paused on `visibilitychange`. |
 | **SEO / sharing** | Meta + Open Graph + Twitter cards, canonical URL, JSON-LD `RoofingContractor` schema with both locations, custom 1200×630 share image. |
 
 ## Storm Check
@@ -95,15 +95,13 @@ file a claim. Service-area matching uses the real Barrington and Spring coverage
    reviews (Google / BBB / GuildQuality) and real attributions.
 2. **License number** — footer says “Illinois Licensed Roofing Contractor”; add the
    actual IL license number.
-3. **Contact form** currently opens the visitor's mail client prefilled (no backend on a
-   static host). Wire `js/main.js` to a form endpoint (Formspree, Netlify Forms, or the
-   company's CRM) — the submit handler is clearly marked.
+3. **Form endpoint** — the form posts to `https://formspree.io/f/FORM_ENDPOINT`.
+   Replace that placeholder with the real endpoint (Formspree, Netlify Forms, or the
+   company's CRM) and the JS mail-client fallback retires itself automatically.
 4. **Photography** — the illustration-first design stands on its own, but real project
    photos can drop into the reviews and restoration sections if desired.
 5. Verify the **Spring, TX** street address and add it to the JSON-LD when confirmed.
-6. **Form endpoint** — `index.html` posts to `https://formspree.io/f/FORM_ENDPOINT`;
-   replace that placeholder and the JS mail-client fallback retires itself automatically.
-7. **Business hours and geo** in the JSON-LD are reasonable defaults — confirm them.
+6. **Business hours and geo** in the JSON-LD are reasonable defaults — confirm them.
 
 ## Notes for future maintainers
 

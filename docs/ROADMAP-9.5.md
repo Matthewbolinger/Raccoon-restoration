@@ -1,5 +1,13 @@
 # Roadmap: 6.97 → 9.5+
 
+> **Status — execution round 1 complete.** Phase 1 (zero defects + accessibility gate)
+> and Phase 2 (the Storm Sequence) are built and pushed, along with the Storm Check tool
+> from Phase 4, the launch pack, and part of Phase 3's type work. Verified: axe-core
+> reports **zero violations** across five states, the Storm Sequence holds **60 fps**,
+> and there is no console error or horizontal overflow at 390/834/1440.
+> Phase 0 (client assets — real testimonials, license number, project photography) is
+> still open and remains the hard ceiling on Content and Design.
+
 A plan to take the Raccoon Restoration site from Honorable Mention (jury baseline
 **6.97** weighted) to **9.5 or higher on every judged axis**.
 
