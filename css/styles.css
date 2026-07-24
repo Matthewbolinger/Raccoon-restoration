@@ -420,14 +420,31 @@ section { padding-block: var(--space-xl); }
 .services-grid { display: grid; gap: 2px; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--line-strong); }
 .service-card {
   background: var(--card); padding: 2rem 1.8rem 2.2rem;
-  position: relative; transition: background-color .2s var(--ease);
+  position: relative; isolation: isolate;
+  transition: background-color .3s var(--ease);
+}
+/* the amber sweeps up from the base rather than just underlining */
+.service-card::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(0deg, rgba(255, 178, 0, .09), transparent 62%);
+  opacity: 0; transition: opacity .35s var(--ease);
 }
 .service-card::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px;
   background: var(--amber); transform: scaleX(0); transform-origin: left;
-  transition: transform .3s var(--ease);
+  transition: transform .35s var(--ease);
 }
+.service-card:hover::before { opacity: 1; }
 .service-card:hover::after { transform: scaleX(1); }
+.service-card h3 { transition: transform .35s var(--ease); }
+.service-card:hover h3 { transform: translateX(6px); }
+.service-card .service-no { transition: color .3s var(--ease); }
+.service-card:hover .service-no { color: var(--ink); }
+@media (prefers-reduced-motion: reduce) {
+  .service-card::before, .service-card::after,
+  .service-card h3, .service-card .service-no { transition: none; }
+  .service-card:hover h3 { transform: none; }
+}
 .service-no {
   font-family: var(--font-mono); font-size: .75rem;
   letter-spacing: .18em; color: var(--amber-ink);
@@ -574,6 +591,12 @@ section { padding-block: var(--space-xl); }
 .review-card blockquote::before {
   content: ""; display: block; width: 34px; height: 4px;
   background: var(--amber); margin-bottom: 1.4rem;
+  transition: width .35s var(--ease);
+}
+.review-card:hover blockquote::before { width: 64px; }
+@media (prefers-reduced-motion: reduce) {
+  .review-card blockquote::before { transition: none; }
+  .review-card:hover blockquote::before { width: 34px; }
 }
 .review-card figcaption {
   display: grid; gap: .2rem;
