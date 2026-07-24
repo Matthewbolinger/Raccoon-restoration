@@ -1,0 +1,14 @@
+{
+  "name": "Raccoon Restoration",
+  "short_name": "Raccoon",
+  "description": "Roofing, storm damage restoration, and insurance claim advocacy in Barrington, IL and Spring, TX.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0E1114",
+  "theme_color": "#0E1114",
+  "icons": [
+    { "src": "/assets/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/assets/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/assets/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

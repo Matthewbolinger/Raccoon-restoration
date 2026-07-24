@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page not found — Raccoon Restoration</title>
+  <meta name="description" content="That page isn't here. Call (224) 500-6825 or head back to the main site.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0E1114">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="preload" href="assets/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .nf {
+      min-height: 100vh; background: var(--graphite); color: var(--ink-invert);
+      display: grid; place-items: center; text-align: center;
+      padding: var(--space-l) 6vw;
+      background-image:
+        linear-gradient(var(--grid-dark) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-dark) 1px, transparent 1px);
+      background-size: 68px 68px;
+    }
+    .nf-inner { max-width: 46rem; display: grid; gap: 1.4rem; justify-items: center; }
+    .nf-code {
+      font-family: var(--font-display);
+      font-variation-settings: "wdth" 120, "wght" 900;
+      font-size: clamp(5rem, 22vw, 13rem); line-height: .8;
+      color: transparent; -webkit-text-stroke: 2px rgba(244, 245, 246, .22);
+    }
+    .nf h1 {
+      font-family: var(--font-display);
+      font-variation-settings: "wdth" 112, "wght" 800;
+      text-transform: uppercase; letter-spacing: -.015em; line-height: .98;
+      font-size: var(--step-3);
+    }
+    .nf h1 .hl { color: var(--amber); }
+    .nf p { color: var(--muted-dark); max-width: 44ch; }
+    .nf-actions { display: flex; flex-wrap: wrap; gap: .8rem; justify-content: center; margin-top: .8rem; }
+    .nf-art { width: min(280px, 70vw); margin-bottom: .6rem; }
+    .nf-art .ln { fill: none; stroke: var(--ink-invert); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .nf-art .accent { stroke: var(--amber); stroke-width: 3.2; }
+    .nf-art .band { stroke: var(--amber); stroke-width: 5; }
+  </style>
+</head>
+<body>
+  <main class="nf">
+    <div class="nf-inner">
+      <!-- The raccoon has gotten into the attic. -->
+      <svg class="nf-art" viewBox="0 0 260 170" role="img" aria-label="A raccoon peering out of an attic window">
+        <path class="ln accent" d="M20 92 L130 14 L240 92"/>
+        <path class="ln" d="M40 92 V150 M220 92 V150 M14 150 H246"/>
+        <circle class="ln" cx="130" cy="96" r="30"/>
+        <!-- raccoon in the window -->
+        <path class="ln" d="M112 112 q18 12 36 0"/>
+        <circle class="ln" cx="120" cy="94" r="4.5"/>
+        <circle class="ln" cx="140" cy="94" r="4.5"/>
+        <path class="band" d="M108 94 H152"/>
+        <path class="ln" d="M112 78 l-5 -12 l13 5 M148 78 l5 -12 l-13 5"/>
+      </svg>
+
+      <span class="nf-code" aria-hidden="true">404</span>
+      <h1>Something got in where it <span class="hl">shouldn't have</span>.</h1>
+      <p>This page isn't here — but if something did get into your attic, or the last
+         storm left you with a roof you're not sure about, that part we can actually fix.</p>
+      <div class="nf-actions">
+        <a class="btn btn-amber" href="/">Back to the site<span class="btn-arrow" aria-hidden="true">→</span></a>
+        <a class="btn btn-outline" href="tel:+12245006825">Call (224) 500-6825</a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

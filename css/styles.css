@@ -35,12 +35,15 @@
   --font-mono:    ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
 
   /* fluid scale */
+  /* .75rem = 12px floor: below that the mono micro-labels stop being legible */
   --step--1: clamp(.78rem, .75rem + .14vw, .86rem);
   --step-0:  clamp(.97rem, .93rem + .22vw, 1.09rem);
   --step-1:  clamp(1.15rem, 1.08rem + .34vw, 1.35rem);
   --step-2:  clamp(1.45rem, 1.3rem + .72vw, 1.95rem);
   --step-3:  clamp(1.9rem, 1.6rem + 1.5vw, 2.9rem);
-  --step-4:  clamp(2.4rem, 1.85rem + 2.7vw, 4.4rem);
+  /* the long marker-block titles ("FINAL WALKTHROUGH.") set the floor here —
+     any larger and they overrun the container on a 390px screen */
+  --step-4:  clamp(1.95rem, 1.2rem + 3.4vw, 4.4rem);
   --step-5:  clamp(2.9rem, 2rem + 4.4vw, 5.6rem);
 
   /* rhythm */
@@ -56,7 +59,12 @@
 /* ---------- Reset-ish ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 * { margin: 0; }
-html { scroll-behavior: smooth; scroll-padding-top: 5.5rem; }
+html {
+  scroll-behavior: smooth; scroll-padding-top: 5.5rem;
+  /* clip on html too: the marquee track is deliberately wider than the
+     viewport and would otherwise leak horizontal scroll on small screens */
+  overflow-x: clip;
+}
 body {
   font-family: var(--font-text);
   font-size: var(--step-0);
@@ -73,7 +81,15 @@ button { font: inherit; }
 
 ::selection { background: var(--amber); color: var(--graphite); }
 
-:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; }
+/* Amber is only 1.56:1 on the light surfaces, so the ring is context-aware:
+   graphite on light, amber on dark. Both clear 3:1 against their backdrop. */
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.hero :focus-visible, .manifesto :focus-visible, .storm :focus-visible,
+.stats :focus-visible, .contact :focus-visible, .site-footer :focus-visible,
+.site-header :focus-visible, .mobile-menu :focus-visible, .call-bar :focus-visible,
+.service-featured :focus-visible {
+  outline-color: var(--amber);
+}
 
 /* ---------- Display type helper ----------
    Archivo carries a width axis — expanded + heavy reads like stamped
@@ -91,11 +107,17 @@ button { font: inherit; }
 /* On dark sections the accent is amber text. On light ones, bright amber
    can't meet contrast as text, so it becomes a hi-vis marker block —
    graphite on amber — which suits the trade better anyway. */
-.hero .hl, .manifesto .hl, .standard .hl, .stats .hl, .contact .hl { color: var(--amber); }
-.services .hl, .process .hl, .reviews .hl, .areas .hl, .faq .hl {
+.hero .hl, .manifesto .hl, .storm .hl, .stats .hl, .contact .hl { color: var(--amber); }
+.services .hl, .process .hl, .check .hl, .faq .hl {
   background: var(--amber); color: var(--graphite);
   padding: 0 .16em; margin-left: -.16em;
   box-decoration-break: clone; -webkit-box-decoration-break: clone;
+}
+/* Two light sections take an underscore instead of a filled block, so the
+   marker device stays an accent rather than becoming a tic. */
+.reviews .hl, .areas .hl {
+  color: var(--ink);
+  box-shadow: inset 0 -.16em 0 var(--amber);
 }
 
 /* ---------- Utilities ---------- */
@@ -130,6 +152,9 @@ button { font: inherit; }
 .btn-amber:hover { background: #FFC53D; border-color: #FFC53D; transform: translateY(-2px); }
 .btn-outline { background: transparent; color: var(--ink-invert); border-color: var(--line-dark); }
 .btn-outline:hover { border-color: var(--ink-invert); transform: translateY(-2px); }
+/* outline variant for light surfaces */
+.btn-line { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+.btn-line:hover { border-color: var(--ink); background: var(--ink); color: var(--card); transform: translateY(-2px); }
 .btn-small { padding: .8em 1.15em; }
 .btn-block { width: 100%; justify-content: center; }
 .btn-arrow { transition: transform .18s var(--ease); }
@@ -149,14 +174,25 @@ button { font: inherit; }
 /* ---------- Header ---------- */
 .site-header {
   position: sticky; top: 0; z-index: 90;
+  background: rgba(14, 17, 20, .92); /* fallback for no color-mix() */
   background: color-mix(in srgb, var(--graphite) 92%, transparent);
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line-dark);
   color: var(--ink-invert);
+  transition: box-shadow .25s var(--ease);
 }
 .header-inner {
   display: flex; align-items: center; justify-content: space-between;
-  gap: var(--space-s); padding-block: .75rem;
+  gap: var(--space-s);
+  padding-block: .75rem;
+  transition: padding-block .25s var(--ease);
+}
+/* The scrolled state compacts the header and lifts it off the page. */
+.site-header.scrolled { box-shadow: 0 14px 34px -22px rgba(0, 0, 0, .9); }
+.site-header.scrolled .header-inner { padding-block: .45rem; }
+.site-header.scrolled .brand-mark { width: 34px; height: 34px; }
+@media (prefers-reduced-motion: reduce) {
+  .site-header, .header-inner, .brand-mark { transition: none; }
 }
 .brand { display: flex; align-items: center; gap: .7rem; text-decoration: none; }
 .brand-mark { width: 40px; height: 40px; flex: none; }
@@ -170,8 +206,10 @@ button { font: inherit; }
   text-transform: uppercase; font-size: 1.12rem; letter-spacing: -.01em;
 }
 .brand-sub {
-  font-family: var(--font-mono); font-size: .55rem;
-  letter-spacing: .36em; text-transform: uppercase; color: var(--amber);
+  /* part of the logotype lockup, not informational text — kept tight so the
+     sub-label stays narrower than the wordmark above it */
+  font-family: var(--font-mono); font-size: .58rem;
+  letter-spacing: .34em; text-transform: uppercase; color: var(--amber);
 }
 
 .nav-list { display: flex; gap: 1.8rem; list-style: none; }
@@ -187,8 +225,8 @@ button { font: inherit; }
 .header-actions { display: flex; align-items: center; gap: 1.2rem; }
 .header-phone { text-decoration: none; text-align: right; display: flex; flex-direction: column; gap: 3px; }
 .phone-label {
-  font-family: var(--font-mono); font-size: .55rem;
-  text-transform: uppercase; letter-spacing: .2em; color: var(--amber);
+  font-family: var(--font-mono); font-size: .64rem;
+  text-transform: uppercase; letter-spacing: .16em; color: var(--amber);
 }
 .phone-number { font-weight: 600; font-size: var(--step--1); color: var(--ink-invert); }
 
@@ -227,17 +265,20 @@ button { font: inherit; }
   font-family: var(--font-mono); font-style: normal; font-size: .3em;
   color: var(--amber); letter-spacing: .1em;
 }
-.mobile-menu-foot { display: grid; gap: .4rem; padding-top: 2rem; }
-.mobile-menu-foot a { color: var(--muted-dark); text-decoration: none; font-size: var(--step--1); }
+.mobile-menu-foot { display: grid; gap: .3rem; padding-top: 2rem; }
+.mobile-menu-foot a {
+  color: var(--muted-dark); text-decoration: none; font-size: var(--step--1);
+  display: flex; align-items: center; min-height: 44px; /* WCAG 2.2 target size */
+}
 body.menu-open { overflow: hidden; }
 
 /* ---------- Section scaffolding ---------- */
 section { padding-block: var(--space-xl); }
-.hero, .manifesto, .standard, .stats, .contact, .site-footer {
+.hero, .manifesto, .storm, .stats, .contact, .site-footer {
   background: var(--graphite); color: var(--ink-invert);
 }
 .manifesto { background: var(--graphite-2); }
-.standard { background: var(--graphite); }
+
 
 /* No max-width here: a ch-based limit is sized by body text and would
    throttle the display titles. Titles break on their own <br>; the intro
@@ -250,7 +291,7 @@ section { padding-block: var(--space-xl); }
   color: var(--amber-ink); margin-bottom: 1.2rem;
 }
 .section-no::before { content: ""; width: 28px; height: 2px; background: currentColor; }
-.hero .section-no, .manifesto .section-no, .standard .section-no,
+.hero .section-no, .manifesto .section-no, .storm .section-no,
 .stats .section-no, .contact .section-no { color: var(--amber); }
 
 .section-title { font-size: var(--step-4); }
@@ -258,7 +299,7 @@ section { padding-block: var(--space-xl); }
   margin-top: 1.3rem; color: var(--muted); max-width: 46ch;
   font-size: var(--step-0);
 }
-.manifesto .section-intro, .standard .section-intro, .contact .section-intro { color: var(--muted-dark); }
+.manifesto .section-intro, .storm .section-intro, .contact .section-intro { color: var(--muted-dark); }
 
 .eyebrow {
   font-family: var(--font-mono); font-size: var(--step--1);
@@ -385,7 +426,7 @@ section { padding-block: var(--space-xl); }
 }
 .service-card:hover::after { transform: scaleX(1); }
 .service-no {
-  font-family: var(--font-mono); font-size: .7rem;
+  font-family: var(--font-mono); font-size: .75rem;
   letter-spacing: .18em; color: var(--amber-ink);
 }
 .service-card h3 { font-size: var(--step-2); margin: 1rem 0 .8rem; }
@@ -448,7 +489,7 @@ section { padding-block: var(--space-xl); }
 
 .ba-tag {
   position: absolute; bottom: 1.1rem;
-  font-family: var(--font-mono); font-size: .64rem;
+  font-family: var(--font-mono); font-size: .75rem;
   letter-spacing: .16em; text-transform: uppercase;
   padding: .5em 1em; border: 1px solid currentColor;
 }
@@ -498,7 +539,7 @@ section { padding-block: var(--space-xl); }
 .step h3 { font-size: var(--step-2); }
 .step p { color: var(--muted); font-size: var(--step-0); }
 .step-meta {
-  font-family: var(--font-mono); font-size: .66rem;
+  font-family: var(--font-mono); font-size: .75rem;
   text-transform: uppercase; letter-spacing: .16em; color: var(--amber-ink);
 }
 
@@ -527,7 +568,7 @@ section { padding-block: var(--space-xl); }
 }
 .review-card figcaption {
   display: grid; gap: .2rem;
-  font-family: var(--font-mono); font-size: .68rem;
+  font-family: var(--font-mono); font-size: .75rem;
   letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
   border-top: 1px solid var(--line); padding-top: 1.1rem;
 }
@@ -538,7 +579,7 @@ section { padding-block: var(--space-xl); }
 .areas-cols { display: grid; grid-template-columns: 1.45fr 1fr; gap: 2px; background: var(--line-strong); }
 .area-office { background: var(--card); padding: 2.2rem 2rem; }
 .office-label {
-  font-family: var(--font-mono); font-size: .66rem; letter-spacing: .2em;
+  font-family: var(--font-mono); font-size: .75rem; letter-spacing: .2em;
   text-transform: uppercase; color: var(--amber-ink);
 }
 .area-office h3 { font-size: var(--step-3); margin-top: .7rem; }
@@ -592,7 +633,7 @@ section { padding-block: var(--space-xl); }
 }
 .contact-details li { display: grid; grid-template-columns: 5rem 1fr; gap: 1.2rem; align-items: baseline; }
 .detail-label {
-  font-family: var(--font-mono); font-size: .64rem; letter-spacing: .2em;
+  font-family: var(--font-mono); font-size: .75rem; letter-spacing: .2em;
   text-transform: uppercase; color: var(--amber);
 }
 .contact-details a { color: var(--ink-invert); text-decoration: none; }
@@ -603,18 +644,23 @@ section { padding-block: var(--space-xl); }
 
 .contact-form {
   background: var(--graphite-2); border: 1px solid var(--line-dark);
-  padding: clamp(1.5rem, 3vw, 2.6rem); display: grid; gap: 1.3rem;
+  padding: clamp(1.5rem, 3vw, 2.6rem);
+  /* minmax(0,1fr): without it the implicit track is sized by the inputs'
+     min-content and every stretched child overflows the card. */
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.3rem;
 }
-.field { display: grid; gap: .5rem; }
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.3rem; }
+.field { display: grid; gap: .5rem; min-width: 0; }
+.field-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.3rem; }
 .field label {
-  font-family: var(--font-mono); font-size: .64rem;
+  font-family: var(--font-mono); font-size: .75rem;
   letter-spacing: .2em; text-transform: uppercase; color: var(--muted-dark);
 }
 .field input, .field select, .field textarea {
   font: inherit; color: var(--ink-invert); background: transparent;
   border: 0; border-bottom: 2px solid var(--line-dark); border-radius: 0;
   padding: .6em .1em; transition: border-color .2s;
+  width: 100%; min-width: 0;
+  font-size: 16px; /* below 16px iOS Safari zooms the viewport on focus */
 }
 .field select { cursor: pointer; }
 .field select option { color: var(--ink); background: var(--card); }
@@ -625,7 +671,7 @@ section { padding-block: var(--space-xl); }
 .field input::placeholder, .field textarea::placeholder { color: rgba(244,245,246,.32); }
 .field.invalid input, .field.invalid textarea { border-bottom-color: #E2703A; }
 .form-note {
-  font-family: var(--font-mono); font-size: .64rem; letter-spacing: .12em;
+  font-family: var(--font-mono); font-size: .75rem; letter-spacing: .12em;
   text-transform: uppercase; color: var(--muted-dark); text-align: center;
 }
 .form-note.sent { color: var(--amber); }
@@ -644,7 +690,7 @@ section { padding-block: var(--space-xl); }
   gap: var(--space-m); padding-bottom: var(--space-l); border-bottom: 1px solid var(--line-dark);
 }
 .footer-label {
-  display: block; font-family: var(--font-mono); font-size: .62rem;
+  display: block; font-family: var(--font-mono); font-size: .75rem;
   letter-spacing: .24em; text-transform: uppercase; color: var(--amber); margin-bottom: 1.1rem;
 }
 .footer-col ul { list-style: none; display: grid; gap: .6rem; }
@@ -657,6 +703,211 @@ section { padding-block: var(--space-xl); }
 }
 .back-top { color: var(--muted-dark); text-decoration: none; }
 .back-top:hover { color: var(--amber); }
+
+/* ==========================================================================
+   THE STORM SEQUENCE
+   ========================================================================== */
+.storm { background: var(--graphite); color: var(--ink-invert); padding-block: 0; }
+.storm-static { padding-block: var(--space-xl); }
+/* When the canvas sequence takes over, the static comparison steps aside. */
+.storm.is-live .storm-static { display: none; }
+
+.storm-track { height: 460vh; position: relative; }
+.storm-stage {
+  position: sticky; top: 0; height: 100vh; overflow: hidden;
+  display: grid; place-items: stretch;
+}
+.storm-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+.storm-ui { position: relative; z-index: 2; height: 100%; display: flex; align-items: center; }
+/* Scrim keeps the copy readable where it sits over the drawing (narrow screens). */
+.storm-ui::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, rgba(14,17,20,.92) 0%, rgba(14,17,20,.72) 34%, rgba(14,17,20,0) 62%);
+}
+@media (min-width: 940px) { .storm-ui::before { display: none; } }
+.storm-ui-inner {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-m); align-items: center; width: var(--container);
+}
+.storm-copy { max-width: 34ch; }
+.storm-title {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 112, "wght" 800;
+  text-transform: uppercase; letter-spacing: -.015em; line-height: .95;
+  font-size: var(--step-4); margin-bottom: 1.6rem;
+}
+.storm-title .hl { color: var(--amber); }
+
+.storm-acts { list-style: none; position: relative; min-height: 12rem; }
+.storm-act {
+  position: absolute; inset: 0;
+  opacity: 0; transform: translateY(14px);
+  transition: opacity .5s var(--ease), transform .5s var(--ease);
+  pointer-events: none;
+}
+.storm-act.is-active { opacity: 1; transform: none; }
+.storm-act h3 {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 105, "wght" 750;
+  text-transform: uppercase; letter-spacing: .02em;
+  font-size: var(--step-1); color: var(--amber); margin-bottom: .6rem;
+}
+.storm-act p { color: var(--ink-invert); font-size: var(--step-1); line-height: 1.5; }
+
+.storm-rail { list-style: none; display: grid; gap: 1.1rem; justify-items: start; }
+.storm-rail li {
+  display: flex; align-items: center; gap: .7rem;
+  font-family: var(--font-mono); font-size: .75rem;
+  letter-spacing: .18em; text-transform: uppercase;
+  color: var(--muted-dark); opacity: .55; transition: opacity .3s, color .3s;
+}
+.storm-rail i {
+  width: 10px; height: 10px; border: 1px solid currentColor;
+  transform: rotate(45deg); transition: background-color .3s;
+}
+.storm-rail li.is-done { opacity: .8; }
+.storm-rail li.is-done i { background: var(--muted-dark); }
+.storm-rail li.is-active { opacity: 1; color: var(--amber); }
+.storm-rail li.is-active i { background: var(--amber); }
+
+.storm-scroll-hint {
+  position: absolute; left: 50%; bottom: 1.6rem; transform: translateX(-50%);
+  font-family: var(--font-mono); font-size: .75rem;
+  letter-spacing: .3em; text-transform: uppercase; color: var(--muted-dark);
+  z-index: 3;
+}
+.storm-scroll-hint::after {
+  content: ""; display: block; width: 1px; height: 22px;
+  margin: .5rem auto 0; background: currentColor; opacity: .5;
+}
+.storm[data-act="3"] .storm-scroll-hint { opacity: 0; transition: opacity .4s; }
+
+/* ==========================================================================
+   STORM CHECK
+   ========================================================================== */
+.check { background: var(--concrete); }
+.check-grid {
+  display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+  gap: var(--space-l); align-items: start;
+}
+.check-grid .section-head { margin-bottom: 0; position: sticky; top: 7rem; }
+.check-notes {
+  list-style: none; display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.6rem;
+}
+.check-notes li {
+  font-family: var(--font-mono); font-size: .75rem;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+  border: 1px solid var(--line-strong); padding: .4em .8em;
+}
+.check-tool {
+  background: var(--card); border: 1px solid var(--line-strong);
+  padding: clamp(1.5rem, 3vw, 2.4rem);
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.8rem;
+}
+.check-field { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: .8rem; }
+.check-field > label, .check-field legend {
+  font-family: var(--font-mono); font-size: .75rem;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--amber-ink);
+  padding: 0;
+}
+.check-field input[type="text"] {
+  font: inherit; font-size: 16px; width: 100%; min-width: 0;
+  background: transparent; color: var(--ink);
+  border: 0; border-bottom: 2px solid var(--line-strong); border-radius: 0;
+  padding: .5em .1em; letter-spacing: .12em;
+}
+.check-field input[type="text"]:focus { outline: none; border-bottom-color: var(--amber-ink); }
+.check-options { display: grid; gap: .55rem; }
+.check-options label {
+  display: flex; align-items: center; gap: .75rem;
+  font-size: var(--step--1); color: var(--ink);
+  padding: .5rem .7rem; border: 1px solid var(--line);
+  cursor: pointer; transition: border-color .18s, background-color .18s;
+  min-height: 44px; /* comfortable touch target */
+}
+.check-options label:hover { border-color: var(--ink); background: var(--concrete); }
+.check-options input { accent-color: var(--amber-ink); width: 18px; height: 18px; flex: none; }
+.check-options input:checked ~ span { font-weight: 600; }
+.check-options label:has(input:checked) { border-color: var(--amber-ink); background: #FFF8E8; }
+
+.check-result { display: block; }
+.check-result:not(.has-result) { display: none; }
+.check-card {
+  border: 1px solid var(--line-strong); border-left: 5px solid var(--muted);
+  padding: 1.5rem 1.4rem; display: grid; gap: .9rem; background: var(--concrete);
+}
+.check-card.is-high { border-left-color: #C2410C; }
+.check-card.is-mid { border-left-color: var(--amber-ink); }
+.check-card.is-low { border-left-color: #2F6F44; }
+.check-verdict {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 108, "wght" 780;
+  text-transform: uppercase; letter-spacing: -.01em; line-height: 1;
+  font-size: var(--step-2);
+}
+.check-card p { font-size: var(--step--1); color: var(--muted); line-height: 1.6; }
+.check-area { color: var(--ink) !important; }
+.check-area.is-served strong { color: var(--amber-ink); }
+.check-actions { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: .3rem; }
+.check-disclaimer {
+  font-size: .8rem; line-height: 1.55; font-style: italic;
+  color: var(--muted) !important;
+  border-top: 1px solid var(--line); padding-top: .9rem;
+}
+
+/* ==========================================================================
+   MOBILE CALL BAR
+   ========================================================================== */
+.call-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 88;
+  display: none; gap: 1px;
+  background: var(--line-dark);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  transform: translateY(0);
+  transition: transform .3s var(--ease);
+}
+.call-bar.is-hidden { transform: translateY(110%); }
+.call-bar a {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: .5rem;
+  min-height: 56px; text-decoration: none;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 100, "wght" 700;
+  text-transform: uppercase; letter-spacing: .04em; font-size: .8rem;
+}
+.call-bar-phone { background: var(--graphite); color: var(--ink-invert); }
+.call-bar-phone svg { width: 18px; height: 18px; fill: var(--amber); }
+.call-bar-cta { background: var(--amber); color: var(--graphite); }
+@media (max-width: 940px) {
+  .call-bar { display: flex; }
+  /* keep the bar from covering the end of the page */
+  .site-footer { padding-bottom: calc(var(--space-m) + 56px); }
+}
+@media (prefers-reduced-motion: reduce) { .call-bar { transition: none; } }
+
+.menu-call {
+  color: var(--amber) !important;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 105, "wght" 750;
+  text-transform: uppercase; letter-spacing: .04em;
+  font-size: 1.15rem !important;
+}
+
+/* ---------- Form errors and hints ---------- */
+.field-hint, .field-error {
+  font-size: .78rem; line-height: 1.45;
+}
+.field-hint { color: var(--muted-dark); }
+.field-error {
+  color: #FFB4A2; display: flex; align-items: baseline; gap: .45rem;
+}
+.field-error span {
+  display: inline-grid; place-items: center; flex: none;
+  width: 15px; height: 15px; border-radius: 50%;
+  background: #E2703A; color: var(--graphite);
+  font-size: .75rem; font-weight: 700;
+}
+.field.invalid input, .field.invalid textarea { border-bottom-color: #E2703A; }
 
 /* ---------- Reveal ----------
    Gated on html.js so content is never hidden if JS fails to load. */
@@ -676,12 +927,23 @@ section { padding-block: var(--space-xl); }
   .reviews-grid { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 1180px) {
+  .nav-list { gap: 1.15rem; }
+  .nav-list a { letter-spacing: .05em; }
+}
+
 @media (max-width: 940px) {
   .site-nav { display: none; }
   .nav-toggle { display: block; }
   .header-phone { display: none; }
   .hero-grid { grid-template-columns: 1fr; }
   .hero-fig { order: -1; }
+  .check-grid { grid-template-columns: 1fr; gap: var(--space-m); }
+  .check-grid .section-head { position: static; }
+  .storm-track { height: 400vh; }
+  .storm-ui-inner { grid-template-columns: minmax(0, 1fr); align-content: center; }
+  .storm-rail { display: flex; flex-wrap: wrap; gap: .5rem 1.1rem; }
+  .storm-copy { max-width: none; }
   .faq-grid { grid-template-columns: 1fr; gap: var(--space-m); }
   .faq-grid .section-head { position: static; }
   .contact-grid { grid-template-columns: 1fr; }
@@ -693,6 +955,9 @@ section { padding-block: var(--space-xl); }
 @media (max-width: 640px) {
   .services-grid { grid-template-columns: 1fr; }
   .service-featured { grid-column: span 1; }
+  .storm-track { height: 360vh; }
+  .storm-acts { min-height: 15rem; }
+  .check-options label { padding: .6rem .7rem; }
   .step { grid-template-columns: 1fr; gap: .8rem; }
   .step:hover { padding-left: 0; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
