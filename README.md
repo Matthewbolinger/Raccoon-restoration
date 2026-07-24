@@ -66,8 +66,25 @@ No build step, no frameworks, no third-party requests. Open `index.html` or serv
 folder with any static host:
 
 ```
-python3 -m http.server 8000     # then http://localhost:8000
+npm start                       # then http://localhost:8000
 ```
+
+### Tests
+
+25 regression guards, one per defect found in review — so none of them can come back
+silently. Console errors and horizontal overflow at three viewports, contact-form
+containment, the hero roof matching its stated pitch, slider touch-action and
+announcement direction, the Storm Sequence's enhancement gates / reduced-motion
+fallback / 55 fps floor, the mobile call bar, menu focus trap and restore, per-field
+form errors, Storm Check honesty, no-JS content visibility, the launch pack, JSON-LD
+parsing, and axe-core across five states.
+
+```
+npm install && npx playwright install chromium
+npm test
+```
+
+They run on every push via `.github/workflows/ci.yml`.
 
 ## How it meets award-winning criteria
 
