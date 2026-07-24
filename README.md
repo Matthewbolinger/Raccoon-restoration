@@ -27,15 +27,39 @@ protection, and expertise. Dark, substantial, and engineered — not a soft temp
 - **Identity** — a custom mark that reads simultaneously as a raccoon face and a
   twin-gabled house (`assets/logo.svg`, `assets/favicon.svg`).
 
+## The Storm Sequence
+
+The site's signature moment. Scrolling `#restoration` scrubs a four-act canvas
+narrative — **calm → storm → claim → restored** — that fuses what used to be two
+disconnected widgets (the roof cross-section and the before/after slider) into one
+continuous scene:
+
+1. **Calm** — the house at dusk, still.
+2. **Storm** — rain and hail ramp up, shingles tear off and fly, damage accrues, and
+   the raccoon takes shelter under the eave.
+3. **Claim** — the scene wireframes into a blueprint and every hit annotates itself as
+   a line-item scope of loss, with a drawing title block.
+4. **Restored** — the assembly rebuilds deck-up, dawn breaks, and the raccoon tops out
+   on the finished ridge.
+
+Built in **Canvas 2D, deliberately not WebGL**: the art direction is line drawing, so
+vector strokes are the medium; it holds 60 fps; and it adds no dependency to a page
+that ships in ~200 KB. It is pure progressive enhancement — without canvas, with
+`prefers-reduced-motion`, with Save-Data, or without JS at all, the static before/after
+comparison is what ships, and the scope-of-loss list is real text either way.
+
 ## Structure
 
 ```
-index.html          single-page site (semantic, landmarked, JSON-LD LocalBusiness schema)
+index.html          single-page site (semantic, landmarked, JSON-LD + FAQPage schema)
+404.html            designed not-found page (the raccoon got into the attic)
 css/styles.css      design system: fluid type/space scale, components, responsive rules
 css/fonts.css       self-hosted @font-face declarations
-js/main.js          progressive enhancement only (page fully works with JS disabled)
+js/main.js          progressive enhancement: nav, reveals, form, Storm Check
+js/storm.js         the Storm Sequence canvas narrative
 assets/fonts/       Archivo + Inter variable woff2 (latin subsets, ~138 KB total)
-assets/logo.svg     lockup ·  assets/favicon.svg  ·  assets/og.png (+ og-source.html)
+assets/             logo.svg · favicon set · og.png (+ og-source.html)
+robots.txt · sitemap.xml · site.webmanifest
 ```
 
 No build step, no frameworks, no third-party requests. Open `index.html` or serve the
@@ -50,12 +74,20 @@ python3 -m http.server 8000     # then http://localhost:8000
 | Criterion | How |
 |---|---|
 | **Design** | Committed art direction (graphite + hi-vis amber), signage-grade display type, hard-edged grid with 2px rules instead of soft cards — no stock photos, no template look. |
-| **Creativity** | Dual-read raccoon/house logo; annotated roof-assembly cutaway as the hero; interactive before/after storm-damage slider built from one shared SVG symbol; pitch-angled section edge. |
-| **Usability** | Sticky nav with persistent phone number and CTA, one-thumb mobile menu, FAQ accordions, inline-validating form, obvious conversion paths throughout. |
+| **Creativity** | **The Storm Sequence** — a scroll-scrubbed four-act canvas narrative; dual-read raccoon/house logo paid off in the sequence and the 404; annotated roof-assembly cutaway; pitch-angled section edge. |
+| **Usability** | Persistent mobile call bar (tap-to-call + CTA in thumb reach), sticky desktop nav with number and CTA, the Storm Check tool, one-thumb mobile menu, FAQ accordions, per-field form validation. |
 | **Content** | Real services, mission, credentials, service areas, and honest FAQ answers a homeowner actually has mid-claim. |
-| **Accessibility** | Semantic landmarks, skip link, focus-visible styles, keyboard-operable slider (native range input) and accordions (native `details`), AA contrast throughout, `prefers-reduced-motion` respected, content never hidden if JS fails. |
-| **Performance** | ~200 KB total page weight, zero third-party requests, self-hosted variable fonts (preloaded, `font-display: swap`), SVG-only graphics, vanilla JS (~4 KB). |
+| **Accessibility** | **axe-core: zero violations** across desktop, mobile, menu-open, reduced-motion and 404 (incl. best-practice rules). Focus trap + `inert` on the mobile overlay, context-aware focus rings, per-field errors with `aria-invalid`/`aria-describedby`, 16px controls, 44px targets, honest slider announcements. |
+| **Performance** | ~200 KB total page weight, zero third-party requests, self-hosted variable fonts (preloaded, `font-display: swap`), vector-only graphics, dependency-free JS. Storm Sequence measured at **60 fps**; canvas loop is IntersectionObserver-gated, DPR-capped, and paused on `visibilitychange`. |
 | **SEO / sharing** | Meta + Open Graph + Twitter cards, canonical URL, JSON-LD `RoofingContractor` schema with both locations, custom 1200×630 share image. |
+
+## Storm Check
+
+An honest self-assessment tool (`#storm-check`): three questions, transparent scoring,
+and a real answer — including "probably nothing, genuinely." It runs entirely in the
+browser and sends nothing anywhere. It deliberately **does not invent storm history**:
+fabricating hail dates for real ZIP codes could mislead someone deciding whether to
+file a claim. Service-area matching uses the real Barrington and Spring coverage lists.
 
 ## Before launch — replace the placeholders
 
@@ -67,8 +99,11 @@ python3 -m http.server 8000     # then http://localhost:8000
    static host). Wire `js/main.js` to a form endpoint (Formspree, Netlify Forms, or the
    company's CRM) — the submit handler is clearly marked.
 4. **Photography** — the illustration-first design stands on its own, but real project
-   photos can drop into the reviews and standard sections if desired.
+   photos can drop into the reviews and restoration sections if desired.
 5. Verify the **Spring, TX** street address and add it to the JSON-LD when confirmed.
+6. **Form endpoint** — `index.html` posts to `https://formspree.io/f/FORM_ENDPOINT`;
+   replace that placeholder and the JS mail-client fallback retires itself automatically.
+7. **Business hours and geo** in the JSON-LD are reasonable defaults — confirm them.
 
 ## Notes for future maintainers
 
@@ -78,3 +113,11 @@ python3 -m http.server 8000     # then http://localhost:8000
   `--art-*` custom properties, which can.
 - `assets/og.png` is rendered from `assets/og-source.html` at exactly 1200×630
   (e.g. a headless Chromium screenshot).
+- `js/storm.js` draws in a fixed 760×560 virtual space (the same coordinate system as
+  the SVG house) and maps it to the canvas in `resize()`. On wide screens the scene is
+  anchored in the channel between the copy column and the act rail; on narrow screens it
+  sits below the copy and the leader-line callouts are suppressed in favour of the real
+  text scope list.
+- Design decisions that look like bugs but aren't: the logotype's sub-label sits below
+  the 12px micro-label floor because it is part of the lockup, not informational text;
+  `hanging-punctuation` is Safari-only and degrades silently.

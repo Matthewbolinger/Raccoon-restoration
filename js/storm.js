@@ -45,7 +45,7 @@
   var acts = Array.prototype.slice.call(section.querySelectorAll('.storm-act'));
   var rails = Array.prototype.slice.call(section.querySelectorAll('.storm-rail li'));
 
-  var w = 0, h = 0, scale = 1, offX = 0, offY = 0, dpr = 1;
+  var w = 0, h = 0, scale = 1, offX = 0, offY = 0, dpr = 1, narrow = false;
   var progress = 0, rendered = -1, running = false, rafId = 0;
   var lastActIndex = -1;
 
@@ -62,14 +62,16 @@
     /* Wide screens: the scene occupies the channel between the copy column and
        the act rail, so nothing overlaps. Narrow: centre it and let the copy
        sit over the top with a scrim behind it. */
-    if (w >= 940) {
+    narrow = w < 940;
+    if (!narrow) {
       scale = Math.min((w * 0.46) / VW, (h * 0.78) / VH);
       offX = w - VW * scale - w * 0.14;
       offY = (h - VH * scale) / 2;
     } else {
-      scale = Math.min(w / VW, h / VH) * 0.94;
+      // narrow: copy sits in the upper third, scene anchored to the bottom
+      scale = Math.min((w * 0.98) / VW, (h * 0.46) / VH);
       offX = (w - VW * scale) / 2;
-      offY = (h - VH * scale) / 2 + h * 0.10;
+      offY = h - VH * scale - h * 0.14;
     }
     rendered = -1;
   }
@@ -410,6 +412,10 @@
       var start = i * 0.11;
       var a = clamp((t - start) / 0.34, 0, 1);
       if (a <= 0) return;
+      /* Narrow screens can't hold the leader lines and labels legibly — the
+         damage points still pulse, and the scope list is real text in the
+         act copy alongside. */
+      if (narrow) { circle(c.x, c.y, 4.5, null, AMBER, 0, a); return; }
       var right = c.lx > 300;
       // leader line draws itself out
       var mx = lerp(c.x, c.lx + (right ? -14 : 14), ease(a));
@@ -425,7 +431,7 @@
   }
 
   function drawTitleBlock(t) {
-    if (t <= 0) return;
+    if (t <= 0 || narrow) return;
     var x = 470, y = 452, bw = 260, bh = 62;
     // opaque: this reads as a real drawing title block sitting on the sheet
     poly([x, y, x + bw, y, x + bw, y + bh, x, y + bh], MUTED, GRAPHITE, 1, t);
@@ -472,7 +478,8 @@
     }
     if (active) {
       var la = 1 - Math.abs((t - (active.from + active.to) / 2) / ((active.to - active.from) / 2 + 0.08));
-      label(active.name, 300, 72, 12, active.color, clamp(la, 0, 1) * settle, 'center');
+      // sits well clear of the ridge, where the raccoon lands at the end
+      label(active.name, 300, 52, 13, active.color, clamp(la, 0, 1) * settle, 'center');
     }
   }
 
