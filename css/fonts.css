@@ -1,0 +1,26 @@
+/* Self-hosted variable fonts (latin subsets) — no third-party requests.
+   Fraunces: SIL Open Font License. Inter: SIL Open Font License. */
+
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 380 700;
+  font-stretch: normal;
+  font-display: swap;
+  src: url("../assets/fonts/fraunces-roman.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Fraunces";
+  font-style: italic;
+  font-weight: 380 700;
+  font-stretch: normal;
+  font-display: swap;
+  src: url("../assets/fonts/fraunces-italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("../assets/fonts/inter.woff2") format("woff2");
+}
