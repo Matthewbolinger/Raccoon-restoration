@@ -767,7 +767,8 @@ section { padding-block: var(--space-xl); }
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(180deg, rgba(14,17,20,.94) 0%, rgba(14,17,20,.82) 42%, rgba(14,17,20,0) 74%);
 }
-.storm-ui-inner { position: relative; z-index: 1; }
+.storm-ui-inner { position: static; }
+.storm-copy { position: relative; z-index: 1; }
 @media (min-width: 940px) { .storm-ui::before { display: none; } }
 .storm-ui-inner {
   display: grid; grid-template-columns: minmax(0, 1fr);
@@ -1025,10 +1026,6 @@ section { padding-block: var(--space-xl); }
   .storm-ui { align-items: flex-start; padding-top: 9vh; }
   .storm-ui-inner { grid-template-columns: minmax(0, 1fr); align-content: start; gap: 1.2rem; }
   .storm-copy { max-width: none; }
-  /* The inner grid drops position:static so the rail resolves against
-     .storm-ui — the full-height stage — instead of the copy block. */
-  .storm-ui-inner { position: static; }
-  .storm-copy { position: relative; z-index: 1; }
   /* clear of the fixed 56px call bar, and of each other */
   .storm-rail { left: 4vw; right: 4vw; bottom: 8.4rem; gap: .4rem 1rem; }
   .storm-scroll-hint { display: none; }
