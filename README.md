@@ -1,138 +1,149 @@
 # Raccoon Restoration — Website Redesign
 
-A ground-up redesign of [raccoonrestoration.com](https://www.raccoonrestoration.com/) for
-**Raccoon Restoration** of Barrington, IL & Spring, TX — roofing, storm damage restoration,
-and insurance claim advocacy.
+A ground-up redesign of [raccoonrestoration.com](https://www.raccoonrestoration.com/)
+for Raccoon Restoration’s roofing, storm-restoration, exterior, and interior services.
+Planned market and service-area wording remains held until the owner verifies it.
+
+## Current status
+
+The repository is a **locally validated release candidate for the code-controllable
+scope**. It is ready for stakeholder and staging review, not an unconditional
+production launch.
+
+The current build:
+
+- preserves the established crowned-RR logo and wordmark;
+- removes fictional testimonials and unsupported statistics;
+- keeps claim-adjusting and legal representations out of public copy;
+- holds local-business structured data until the legal entity and public facts are
+  verified;
+- uses an explicit email-client handoff until a durable lead endpoint is approved;
+- makes reveal motion fail open if JavaScript enhancement cannot initialize;
+- uses a compact responsive service register, a static mobile restoration comparison,
+  and the desktop-only Storm Sequence;
+- provides a deterministic four-route Groundline action brief without diagnosing,
+  clearing, or making a coverage decision; and
+- records every blocked fact and owner decision in
+  [`docs/TRUTH-REGISTER.md`](docs/TRUTH-REGISTER.md) and
+  [`docs/OWNER-INPUTS.md`](docs/OWNER-INPUTS.md).
 
 ## Design concept: “Storm & Structure”
 
-The site is built to look like what the company actually sells: structure, weather
-protection, and expertise. Dark, substantial, and engineered — not a soft template.
+The visual system is substantial and engineered: wet-slate graphite, concrete, a
+single hi-vis amber accent, hard-edged rules, and technical line drawings rather than
+a generic contractor template.
 
-- **Palette** — wet-slate graphite `#0E1114` dominant, concrete `#EDEEF0` for light
-  sections, and hi-vis safety amber `#FFB200` as the single accent. Amber is what a
-  roofer wears on a roof; it also reads as caution, energy, and urgency for storm work.
-- **Typography** — [Archivo](https://fonts.google.com/specimen/Archivo) variable grotesk
-  for display, run wide (`wdth` 112) and heavy (`wght` 800) in uppercase so headlines
-  read like stamped signage. [Inter](https://fonts.google.com/specimen/Inter) for body,
-  system monospace for technical labels and numbering. Both self-hosted.
-- **Contrast rule** — bright amber can't meet contrast as text on light backgrounds, so
-  on light sections the accent becomes a **hi-vis marker block** (graphite on amber)
-  instead of colored type. It's both accessible and more on-brand than tinted text.
-- **Hero illustration** — a labeled **roof assembly cross-section** (shingles →
-  underlayment → ice & water shield → decking → rafters), drawn to a stated 8:12 pitch.
-  It shows trade knowledge and teaches the homeowner something in the first screen.
-- **Roof-pitch motif** — the contact section's top edge is cut on a pitch angle,
-  echoing a roofline.
-- **Identity** — a custom mark that reads simultaneously as a raccoon face and a
-  twin-gabled house (`assets/logo.svg`, `assets/favicon.svg`).
+- **Typography** — self-hosted Archivo for display and Inter for body copy.
+- **Hero illustration** — a labeled roof-assembly cross-section drawn to an 8:12 pitch.
+- **Roof-pitch motif** — the contact section uses a pitched top edge.
+- **Identity** — the production crowned-RR lockup is used as one unmodified image.
+  See [`docs/BRAND-ASSET-STANDARD.md`](docs/BRAND-ASSET-STANDARD.md) for the provisional
+  rules and the official source assets still required from the owner.
 
 ## The Storm Sequence
 
-The site's signature moment. Scrolling `#restoration` scrubs a four-act canvas
-narrative — **calm → storm → claim → restored** — that fuses what used to be two
-disconnected widgets (the roof cross-section and the before/after slider) into one
-continuous scene:
+The signature interaction is a four-act Canvas 2D narrative:
+**calm → storm → scope → restored**.
 
-1. **Calm** — the house at dusk, still.
-2. **Storm** — rain and hail ramp up, shingles tear off and fly, damage accrues, and
-   the raccoon takes shelter under the eave.
-3. **Claim** — the scene wireframes into a blueprint and every hit annotates itself as
-   a line-item scope of loss, with a drawing title block.
-4. **Restored** — the assembly rebuilds deck-up, dawn breaks, and the raccoon tops out
-   on the finished ridge.
-
-Built in **Canvas 2D, deliberately not WebGL**: the art direction is line drawing, so
-vector strokes are the medium; it holds 60 fps; and it adds no dependency to a page
-that ships in ~270 KB. It is pure progressive enhancement — without canvas, with
-`prefers-reduced-motion`, with Save-Data, or without JS at all, the static before/after
-comparison is what ships, and the scope-of-loss list is real text either way.
+The storm scene builds into a contractor repair scope and then reconstructs the roof
+assembly. It is progressive enhancement: the static comparison and real text remain
+available without canvas, with reduced motion, with Save-Data, or without JavaScript.
 
 ## Structure
 
-```
-index.html          single-page site (semantic, landmarked, JSON-LD + FAQPage schema)
-404.html            designed not-found page (the raccoon got into the attic)
-css/styles.css      design system: fluid type/space scale, components, responsive rules
-css/fonts.css       self-hosted @font-face declarations
-js/main.js          progressive enhancement: nav, reveals, form, Storm Check
-js/storm.js         the Storm Sequence canvas narrative
-assets/fonts/       Archivo + Inter variable woff2 (latin subsets, ~138 KB total)
-assets/             logo.svg · favicon set · og.png (+ og-source.html)
+```text
+index.html          single-page site with semantic landmarks; local schema held
+404.html            designed not-found page
+css/styles.css      design system, components, and responsive rules
+css/fonts.css       self-hosted font declarations
+js/main.js          nav, fail-open reveals, contact validation, and Groundline
+js/storm.js         progressive Storm Sequence canvas narrative
+assets/fonts/       self-hosted Archivo and Inter variable fonts
+assets/             production logo reference, provisional icon set, and social card
+docs/               truth register, owner-input checklist, and brand-asset standard
+tests/              Playwright regression and accessibility suite
 robots.txt · sitemap.xml · site.webmanifest
 ```
 
-No build step, no frameworks, no third-party requests. Open `index.html` or serve the
-folder with any static host:
+No application build step or frontend framework is required.
 
+```bash
+npm ci
+npm start
 ```
-npm start                       # then http://localhost:8000
-```
 
-### Tests
+Then open `http://localhost:8000`.
 
-25 regression guards, one per defect found in review — so none of them can come back
-silently. Console errors and horizontal overflow at three viewports, contact-form
-containment, the hero roof matching its stated pitch, slider touch-action and
-announcement direction, the Storm Sequence's enhancement gates / reduced-motion
-fallback / 55 fps floor, the mobile call bar, menu focus trap and restore, per-field
-form errors, Storm Check honesty, no-JS content visibility, the launch pack, JSON-LD
-parsing, and axe-core across five states.
+## Tests
 
-```
-npm install && npx playwright install chromium
+The Playwright suite guards:
+
+- console/page errors and horizontal overflow at multiple viewports;
+- initial form-error visibility and accessible field validation;
+- required phone-or-email contact information;
+- the honest email-client delivery state;
+- no fictional reviews, unsupported claims, or speculative schema;
+- no-JavaScript content visibility and reveal fail-open behavior;
+- reduced-motion and Storm Sequence enhancement gates;
+- mobile navigation focus handling and non-overlapping tap-to-call behavior;
+- the responsive seven-service rail and all four Groundline result routes;
+- live breakpoint changes, deep links, no-JavaScript alternatives, and menu cleanup;
+- trim-aware contact validation, sensible phone digits, and mailto size limits;
+- scroll-height, first-load payload, social metadata, and verified-credential guards;
+- launch assets, structured-data quarantine, and axe-core coverage across key states.
+
+```bash
+npm ci
+npx playwright install chromium firefox webkit
 npm test
 ```
 
-They run on every push via `.github/workflows/ci.yml`.
+The current local gate is **77/77 checks passing** across Chromium, Firefox, and
+WebKit. CI uses the committed lockfile and runs the same browser coverage on every
+push and pull request.
 
-## How it meets award-winning criteria
+## Contact behavior
 
-| Criterion | How |
-|---|---|
-| **Design** | Committed art direction (graphite + hi-vis amber), signage-grade variable display type, hard-edged 2px-rule grids instead of soft cards, and a bespoke line-drawing system that carries the whole site — no stock photos, no template look. |
-| **Creativity** | **The Storm Sequence** — a scroll-scrubbed four-act canvas narrative; dual-read raccoon/house logo paid off in the sequence and the 404; annotated roof-assembly cutaway; pitch-angled section edge. |
-| **Usability** | Persistent mobile call bar (tap-to-call + CTA in thumb reach), sticky desktop nav with number and CTA, the Storm Check tool, one-thumb mobile menu, FAQ accordions, per-field form validation. |
-| **Content** | Real services, mission, credentials, service areas, and honest FAQ answers a homeowner actually has mid-claim. |
-| **Accessibility** | **axe-core: zero violations** across desktop, mobile, menu-open, reduced-motion and 404 (incl. best-practice rules). Focus trap + `inert` on the mobile overlay, context-aware focus rings, per-field errors with `aria-invalid`/`aria-describedby`, 16px controls, 44px targets, honest slider announcements. |
-| **Performance** | ~267 KB total page weight, zero third-party requests, self-hosted variable fonts (preloaded, `font-display: swap`), vector-only graphics, dependency-free JS. Storm Sequence measured at **60 fps**; canvas loop is IntersectionObserver-gated, DPR-capped, and paused on `visibilitychange`. |
-| **SEO / sharing** | Meta + Open Graph + Twitter cards, canonical URL, JSON-LD `RoofingContractor` schema with both locations, custom 1200×630 share image. |
+The current form does not claim to submit data to a server. After validation, it opens
+a prefilled message in the visitor’s email application and states that nothing was
+sent from the page. Replace this interim handoff only after the CRM owner approves a
+durable, monitored endpoint with truthful success, failure, retry, privacy, and
+retention behavior.
 
-## Storm Check
+## Groundline brief
 
-An honest self-assessment tool (`#storm-check`): three questions, transparent scoring,
-and a real answer — including "probably nothing, genuinely." It runs entirely in the
-browser and sends nothing anywhere. It deliberately **does not invent storm history**:
-fabricating hail dates for real ZIP codes could mislead someone deciding whether to
-file a claim. Service-area matching uses the real Barrington and Spring coverage lists.
+Groundline is a browser-only observation brief. It turns selected visible conditions
+into one of four deterministic, non-diagnostic action plans that can be copied or moved
+into the email request. It sends no data, invents no weather history, makes no insurance
+or service-area determination, and keeps a direct phone path visible.
 
-## Before launch — replace the placeholders
+## Production gates
 
-1. **Testimonials** (`#reviews`) are plausible placeholders — swap in verified customer
-   reviews (Google / BBB / GuildQuality) and real attributions.
-2. **License number** — footer says “Illinois Licensed Roofing Contractor”; add the
-   actual IL license number.
-3. **Form endpoint** — the form posts to `https://formspree.io/f/FORM_ENDPOINT`.
-   Replace that placeholder with the real endpoint (Formspree, Netlify Forms, or the
-   company's CRM) and the JS mail-client fallback retires itself automatically.
-4. **Photography** — the illustration-first design stands on its own, but real project
-   photos can drop into the reviews and restoration sections if desired.
-5. Verify the **Spring, TX** street address and add it to the JSON-LD when confirmed.
-6. **Business hours and geo** in the JSON-LD are reasonable defaults — confirm them.
+Do not deploy as the production site until:
 
-## Notes for future maintainers
+1. the owner-input blockers are answered with evidence;
+2. legal identity, licenses, locations, hours, service areas, and operating promises
+   are approved;
+3. the official vector logo, mark-only asset, colors, and derivative permissions are
+   supplied or the provisional raster use is explicitly approved;
+4. a real lead-delivery path passes success, failure, duplicate, retry, and routing
+   tests;
+5. privacy and contact-consent wording is approved;
+6. real project media and reviews have source records and reuse permission; and
+7. manual assistive-technology and representative-device QA is recorded; and
+8. staging and production performance, routing, monitoring, rollback, SEO, and launch
+   QA gates pass.
 
-- The before/after slider shares one SVG symbol between both panes. Its styles are
-  written against `#art-defs` (where the artwork really lives) because class selectors
-  cannot reach into a `<use>` shadow tree; per-pane theming rides on inherited
-  `--art-*` custom properties, which can.
-- `assets/og.png` is rendered from `assets/og-source.html` at exactly 1200×630
-  (e.g. a headless Chromium screenshot).
-- `js/storm.js` draws in a fixed 760×560 virtual space (the same coordinate system as
-  the SVG house) and maps it to the canvas in `resize()`. On wide screens the scene is
-  anchored in the channel between the copy column and the act rail; on narrow screens it
-  sits below the copy and the leader-line callouts are suppressed in favour of the real
-  text scope list.
-- Design decisions that look like bugs but aren't: the logotype's sub-label sits below
-  the 12px micro-label floor because it is part of the lockup, not informational text;
-  `hanging-punctuation` is Safari-only and degrades silently.
+Anything still marked `pending` or `quarantined` in the Truth Register stays out of
+public copy and structured data.
+
+## Notes for maintainers
+
+- The before/after slider shares one SVG symbol between both panes. Per-pane theming
+  uses inherited `--art-*` custom properties and simple class selectors that remain
+  valid in the generated `<use>` instance tree.
+- `assets/og.png` is rendered from `assets/og-source.html` at 1200 × 630.
+- `js/storm.js` draws in a fixed 760 × 560 virtual space and maps it to the live canvas
+  in `resize()`.
+- The logo remains the exact stacked production lockup. Do not re-typeset its wordmark
+  or redraw the mark.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* Runner for the regression guards. Starts a static server, resolves
-   playwright and (optionally) axe-core, runs every check, prints a summary.
+   playwright and axe-core, runs every check, prints a summary.
 
    Usage:  node tests/run.mjs
    Exit code is non-zero if anything fails, so this is CI-ready.          */
@@ -9,6 +9,7 @@ import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { createServer } from 'node:net';
 import path from 'node:path';
 
 const require = createRequire(import.meta.url);
@@ -43,60 +44,114 @@ if (!playwright) {
   process.exit(2);
 }
 const axePath = resolveAxe();
-if (!axePath) console.warn('! axe-core not found — accessibility checks will be skipped.\n');
+if (!axePath) {
+  console.error('axe-core not found. Install it; accessibility checks are required.');
+  process.exit(2);
+}
 
 /* ---- static server ---- */
-const PORT = 8899;
-async function portAlive() {
+async function reservePort() {
+  const probe = createServer();
+  await new Promise((resolve, reject) => {
+    probe.once('error', reject);
+    probe.listen(0, '127.0.0.1', resolve);
+  });
+  const address = probe.address();
+  const port = typeof address === 'object' && address ? address.port : 0;
+  await new Promise((resolve) => probe.close(resolve));
+  if (!port) throw new Error('Could not reserve a local test port.');
+  return port;
+}
+
+const PORT = await reservePort();
+const TEST_BASE = `http://127.0.0.1:${PORT}`;
+process.env.TEST_BASE = TEST_BASE;
+
+async function serverReady() {
   try {
-    const res = await fetch(`http://127.0.0.1:${PORT}/index.html`);
-    return res.ok;
+    const res = await fetch(`${TEST_BASE}/index.html`);
+    const body = await res.text();
+    return res.ok && body.includes('<title>Raccoon Restoration');
   } catch { return false; }
 }
 
-let server = null;
+const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'], {
+  cwd: root,
+  stdio: 'ignore',
+});
 // kill the child only — never the process group, which would take the caller with it
 let stopped = false;
 const stopServer = () => {
-  if (stopped || !server) return;
+  if (stopped) return;
   stopped = true;
   try { server.kill('SIGTERM'); } catch { /* already gone */ }
 };
 
-if (await portAlive()) {
-  console.log(`Reusing the static server already on :${PORT}`);
-} else {
-  server = spawn('python3', ['-m', 'http.server', String(PORT)], { cwd: root, stdio: 'ignore' });
-  process.on('exit', stopServer);
-  process.on('SIGINT', () => { stopServer(); process.exit(130); });
-  for (let i = 0; i < 20 && !(await portAlive()); i++) await new Promise((r) => setTimeout(r, 250));
-  if (!(await portAlive())) { console.error(`Could not start a server on :${PORT}`); process.exit(2); }
+process.on('exit', stopServer);
+process.on('SIGINT', () => { stopServer(); process.exit(130); });
+for (let i = 0; i < 20 && !(await serverReady()); i++) {
+  await new Promise((resolve) => setTimeout(resolve, 250));
+}
+if (!(await serverReady())) {
+  stopServer();
+  console.error(`Could not start this repository's server on :${PORT}`);
+  process.exit(2);
 }
 
 /* ---- run ---- */
 const { makeTests } = await import('./site.spec.mjs');
-const tests = makeTests({ chromium: playwright.chromium, axePath });
-const browser = await playwright.chromium.launch({ headless: true });
+const { makeCrossBrowserTests } = await import('./cross-browser.spec.mjs');
+const suites = [
+  {
+    label: 'Chromium',
+    engine: playwright.chromium,
+    tests: makeTests({ chromium: playwright.chromium, axePath }),
+  },
+  {
+    label: 'Firefox',
+    engine: playwright.firefox,
+    tests: makeCrossBrowserTests({ browserName: 'Firefox', axePath }),
+  },
+  {
+    label: 'WebKit',
+    engine: playwright.webkit,
+    tests: makeCrossBrowserTests({ browserName: 'WebKit', axePath }),
+  },
+];
 
 let passed = 0;
 const failures = [];
-console.log(`Running ${tests.length} checks against http://127.0.0.1:${PORT}\n`);
+const total = suites.reduce((sum, suite) => sum + suite.tests.length, 0);
+console.log(`Running ${total} checks against ${TEST_BASE}\n`);
 
-for (const t of tests) {
+for (const suite of suites) {
+  let browser;
   try {
-    await t.fn(browser);
-    passed++;
-    console.log(`  ✓ ${t.name}`);
+    browser = await suite.engine.launch({ headless: true });
   } catch (err) {
-    failures.push({ name: t.name, message: err.message });
-    console.log(`  ✗ ${t.name}\n      ${err.message.split('\n').join('\n      ')}`);
+    for (const t of suite.tests) {
+      failures.push({ name: t.name, message: `${suite.label} unavailable: ${err.message}` });
+      console.log(`  ✗ ${t.name}\n      ${suite.label} unavailable: ${err.message.split('\n')[0]}`);
+    }
+    continue;
   }
+
+  for (const t of suite.tests) {
+    try {
+      await t.fn(browser);
+      passed++;
+      console.log(`  ✓ ${t.name}`);
+    } catch (err) {
+      failures.push({ name: t.name, message: err.message });
+      console.log(`  ✗ ${t.name}\n      ${err.message.split('\n').join('\n      ')}`);
+    }
+  }
+  await browser.close();
 }
 
-await browser.close();
 stopServer();
 
-console.log(`\n${passed}/${tests.length} passed`);
+console.log(`\n${passed}/${total} passed`);
 if (failures.length) {
   console.log(`\n${failures.length} failing:`);
   for (const f of failures) console.log(`  - ${f.name}`);

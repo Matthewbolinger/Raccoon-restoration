@@ -21,15 +21,8 @@
     padding: 58px 68px 52px;
     position: relative;
   }
-  .top { display: flex; align-items: center; gap: 24px; }
-  .brand-name {
-    font-family: "Archivo", sans-serif; font-variation-settings: "wdth" 110, "wght" 800;
-    text-transform: uppercase; font-size: 30px; line-height: 1; letter-spacing: -.01em;
-  }
-  .brand-sub {
-    font-family: ui-monospace, Menlo, monospace; font-size: 11px;
-    letter-spacing: .42em; text-transform: uppercase; color: #FFB200; margin-top: 5px;
-  }
+  .top { display: flex; align-items: center; }
+  .brand-logo { display: block; width: 190px; height: auto; }
   .title {
     font-family: "Archivo", sans-serif; font-variation-settings: "wdth" 112, "wght" 800;
     text-transform: uppercase; font-size: 128px; line-height: .92; letter-spacing: -.02em;
@@ -47,24 +40,14 @@
 </head>
 <body>
   <div class="top">
-    <svg width="66" height="66" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-      <path fill="#F4F5F6" d="M12 54 L12 26 L22 10 L32 21 L42 10 L52 26 L52 54 Z"/>
-      <path fill="#FFB200" d="M12 29 H52 V42 H12 Z"/>
-      <circle fill="#0E1114" cx="24" cy="35.5" r="3.4"/>
-      <circle fill="#0E1114" cx="40" cy="35.5" r="3.4"/>
-      <path fill="#0E1114" d="M28.6 54 V47.4 A3.4 3.4 0 0 1 35.4 47.4 V54 Z"/>
-    </svg>
-    <div>
-      <div class="brand-name">Raccoon</div>
-      <div class="brand-sub">Restoration</div>
-    </div>
+    <img class="brand-logo" src="logo.png" alt="Raccoon Restoration">
   </div>
 
   <div class="title">Built for the<br><span class="hl">next</span> storm.</div>
 
   <div class="foot">
-    <span>Roofing · Siding · Interiors · Claim Advocacy</span>
-    <span><b>A+</b> BBB Accredited · Barrington, IL</span>
+    <span>Roofing · Siding · Interiors · Storm Restoration</span>
+    <span>(224) 500-6825 · Ask about project availability</span>
   </div>
   <div class="bar"></div>
 </body>
