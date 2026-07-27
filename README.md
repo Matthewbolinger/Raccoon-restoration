@@ -81,10 +81,13 @@ parsing, and axe-core across five states.
 
 ```
 npm install && npx playwright install chromium
-npm test
+npm test                    # 28 guards
+CHECK_LAUNCH=1 npm test     # adds the launch gate — fails while placeholders stand
 ```
 
-They run on every push via `.github/workflows/ci.yml`.
+They run on every push via `.github/workflows/ci.yml`. The launch gate is opt-in
+so day-to-day runs stay green, but it will refuse to pass while the IL license
+number, the form endpoint, or the placeholder testimonials are still in place.
 
 ## How it meets award-winning criteria
 
@@ -95,7 +98,7 @@ They run on every push via `.github/workflows/ci.yml`.
 | **Usability** | Persistent mobile call bar (tap-to-call + CTA in thumb reach), sticky desktop nav with number and CTA, the Storm Check tool, one-thumb mobile menu, FAQ accordions, per-field form validation. |
 | **Content** | Real services, mission, credentials, service areas, and honest FAQ answers a homeowner actually has mid-claim. |
 | **Accessibility** | **axe-core: zero violations** across desktop, mobile, menu-open, reduced-motion and 404 (incl. best-practice rules). Focus trap + `inert` on the mobile overlay, context-aware focus rings, per-field errors with `aria-invalid`/`aria-describedby`, 16px controls, 44px targets, honest slider announcements. |
-| **Performance** | ~267 KB total page weight, zero third-party requests, self-hosted variable fonts (preloaded, `font-display: swap`), vector-only graphics, dependency-free JS. Storm Sequence measured at **60 fps**; canvas loop is IntersectionObserver-gated, DPR-capped, and paused on `visibilitychange`. |
+| **Performance** | **~88 KB over the wire** (gzipped text + subset fonts; 193 KB uncompressed), zero third-party requests, dependency-free JS. Fonts are instanced to the axes actually used and subset to the 115 glyphs the site renders: 138 KB → 52 KB. The Storm Sequence measures **61 fps unthrottled and 52 fps at the heaviest frame under 4× CPU throttle**, because it is fill-rate bound — an adaptive tier drops raster resolution rather than dropping frames. |
 | **SEO / sharing** | Meta + Open Graph + Twitter cards, canonical URL, JSON-LD `RoofingContractor` schema with both locations, custom 1200×630 share image. |
 
 ## Storm Check

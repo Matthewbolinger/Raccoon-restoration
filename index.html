@@ -183,6 +183,12 @@
   <!-- Mobile overlay menu (outside the header: the header's backdrop-filter
        would otherwise become the containing block for this fixed element) -->
   <div class="mobile-menu" id="mobile-menu" hidden>
+    <button class="menu-close" type="button" aria-label="Close menu">
+      <span aria-hidden="true">Close</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M5 5 L19 19 M19 5 L5 19" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+      </svg>
+    </button>
     <nav aria-label="Mobile">
       <ol class="mobile-nav-list">
         <li><a href="#about"><em>01</em> About</a></li>
@@ -291,8 +297,8 @@
     <!-- ============ MARQUEE ============ -->
     <div class="marquee" aria-hidden="true">
       <div class="marquee-track">
-        <span>Roofing</span><i></i><span>Siding</span><i></i><span>Gutters</span><i></i><span>Windows &amp; Doors</span><i></i><span>Interior Restoration</span><i></i><span>Wallpaper &amp; Paint</span><i></i><span>Public Adjusting</span><i></i><span>Storm Response</span><i></i>
-        <span>Roofing</span><i></i><span>Siding</span><i></i><span>Gutters</span><i></i><span>Windows &amp; Doors</span><i></i><span>Interior Restoration</span><i></i><span>Wallpaper &amp; Paint</span><i></i><span>Public Adjusting</span><i></i><span>Storm Response</span><i></i>
+        <span>Roofing</span><i></i><span>Siding</span><i></i><span>Gutters</span><i></i><span>Windows &amp; Doors</span><i></i><span>Interior Restoration</span><i></i><span>Wallpaper &amp; Paint</span><i></i><span>Claim Support</span><i></i><span>Storm Response</span><i></i>
+        <span>Roofing</span><i></i><span>Siding</span><i></i><span>Gutters</span><i></i><span>Windows &amp; Doors</span><i></i><span>Interior Restoration</span><i></i><span>Wallpaper &amp; Paint</span><i></i><span>Claim Support</span><i></i><span>Storm Response</span><i></i>
       </div>
     </div>
 
@@ -309,7 +315,7 @@
         </blockquote>
         <div class="manifesto-cols">
           <p class="reveal">Most homeowners meet us on the worst week of their year. The roof is open, the ceiling is stained, and that number is about to be decided by whoever documents the loss most carefully. So we read the policy, photograph what the storm actually did, and bring in licensed public adjusters to sit across the table from the carrier until the paperwork matches the damage.</p>
-          <p class="reveal">That is the whole business: document honestly, argue well, then build it back with tradesmen who would put their own name on the ridge. We will tell you when there is no damage. We will tell you when the first offer is short. And we will still be answering the phone about that roof in eight years — because our commitment doesn't end when the work is done, which is the plainest way we know to say we're setting a gold standard in craftsmanship, integrity, and customer care.</p>
+          <p class="reveal">That is the whole business: document honestly, argue well, then build it back with tradesmen who would put their own name on the ridge. We will tell you when there is no damage. We will tell you when the first offer is short. And we will still be answering the phone about that roof in eight years.</p>
         </div>
       </div>
     </section>
@@ -358,7 +364,7 @@
           <article class="service-card service-featured reveal">
             <div class="featured-head">
               <span class="service-no">07</span>
-              <h3>Public Adjusting &amp;<br>Claim Advocacy</h3>
+              <h3>Claim Documentation<br>&amp; Advocacy Support</h3>
             </div>
             <div class="featured-body">
               <p>The gap between what a carrier offers and what restoration actually costs is a fight most homeowners don't know they can bring. Our licensed public adjusting partners:</p>
@@ -382,7 +388,7 @@
            has not requested reduced motion or data saving — otherwise the
            static comparison below is what ships. -->
       <div class="storm-track" hidden>
-        <div class="storm-stage">
+        <div class="storm-stage" tabindex="0" role="group" aria-label="Storm sequence stage">
           <canvas id="storm-canvas" class="storm-canvas" aria-hidden="true"></canvas>
           <div class="storm-ui">
             <div class="container storm-ui-inner">
@@ -442,12 +448,12 @@
 
         <div class="ba-wrap reveal">
           <div class="ba-viewport" id="ba-viewport" style="--cut:50%">
-            <div class="ba-pane ba-after" aria-hidden="true">
-              <svg viewBox="0 0 760 560" focusable="false"><use href="#house-fine"/></svg>
+            <div class="ba-pane ba-after">
+              <svg viewBox="0 0 760 560" role="img" aria-label="The house after restoration: new roof, intact siding, clear gutters." focusable="false"><use href="#house-fine"/></svg>
               <span class="ba-tag ba-tag-after">After — restored</span>
             </div>
-            <div class="ba-pane ba-before" aria-hidden="true">
-              <svg viewBox="0 0 760 560" focusable="false"><use href="#house-fine"/><use href="#house-damage"/></svg>
+            <div class="ba-pane ba-before">
+              <svg viewBox="0 0 760 560" role="img" aria-label="The same house after a hail event: torn shingles, a tarped wing roof, a boarded window, a cracked wall and a sagging gutter." focusable="false"><use href="#house-fine"/><use href="#house-damage"/></svg>
               <span class="ba-tag ba-tag-before">Before — hail event</span>
             </div>
             <div class="ba-divider" aria-hidden="true"><span class="ba-handle">↔</span></div>
@@ -455,6 +461,15 @@
                    aria-label="Compare before and after restoration" aria-valuetext="50% restored, 50% storm-damaged">
           </div>
           <p class="ba-hint">◂ Restored &nbsp;·&nbsp; Storm-damaged ▸</p>
+          <ol class="static-acts">
+            <li><h3>The storm</h3><p>Hail bruises the mat, wind creases the tabs. The damage that decides your claim is the damage you cannot see from the driveway.</p></li>
+            <li><h3>The claim</h3><p>Every hit photographed, measured, and written up as a line-item scope of loss — the document your settlement gets argued from.</p>
+              <ul class="storm-scope">
+                <li>Hail bruising — N slope</li><li>Creased tabs — 14 sq</li><li>Ridge cap — 42 lf</li>
+                <li>Step flashing failure</li><li>Deck saturation — 2 sht</li><li>Gutter — 38 lf</li>
+              </ul></li>
+            <li><h3>Restored</h3><p>Decking, ice &amp; water shield, underlayment, shingles. Built back better than the storm found it.</p></li>
+          </ol>
         </div>
       </div>
       </div>
@@ -590,12 +605,12 @@
           </ul>
         </div>
 
-        <form class="check-tool reveal" id="check-tool" novalidate>
+        <form class="check-tool reveal" id="check-tool">
           <div class="check-field">
             <label for="c-zip">1 — Your ZIP code</label>
             <p class="field-hint" id="h-zip">Only used to check whether you're in our service area. We won't guess your storm history from it — that takes a look at the actual roof.</p>
             <input id="c-zip" name="zip" type="text" inputmode="numeric" pattern="[0-9]{5}"
-                   maxlength="5" autocomplete="postal-code" placeholder="60010" aria-describedby="h-zip">
+                   maxlength="5" autocomplete="postal-code" placeholder="e.g. 60010" aria-describedby="h-zip">
           </div>
 
           <fieldset class="check-field">
@@ -670,7 +685,7 @@
           </figure>
           <figure class="review-card reveal">
             <blockquote>
-              <p>Our first settlement offer wouldn't have covered half the work. Their claim advocates re-scoped everything and got it funded properly. Worth every minute of the process.</p>
+              <p>The first offer didn't look right to us, and nobody at the insurance company was going to explain why. They walked us through the scope line by line and brought in an adjuster who does this for a living. We finally understood our own policy.</p>
             </blockquote>
             <figcaption><strong>D. S.</strong><span>Lake Zurich, IL</span></figcaption>
           </figure>
@@ -783,7 +798,7 @@
         <!-- action/method are real so the form still submits without JS.
              Replace FORM_ENDPOINT with the live endpoint before launch. -->
         <form class="contact-form reveal" id="contact-form" method="post"
-              action="https://formspree.io/f/FORM_ENDPOINT" novalidate>
+              action="https://formspree.io/f/FORM_ENDPOINT">
           <div class="field-row">
             <div class="field">
               <label for="f-name">Name</label>
@@ -852,7 +867,7 @@
             <li><a href="#services">Siding &amp; Gutters</a></li>
             <li><a href="#services">Windows &amp; Doors</a></li>
             <li><a href="#services">Interior · Paint</a></li>
-            <li><a href="#services">Public Adjusting</a></li>
+            <li><a href="#services">Claim Support</a></li>
           </ul>
         </div>
         <div class="footer-col">
@@ -874,7 +889,7 @@
         </div>
       </div>
       <div class="footer-legal">
-        <p>© <span id="year">2026</span> Raccoon Restoration · Illinois Licensed Roofing Contractor · BBB Accredited, A+ Rated</p>
+        <p>© <span id="year">2026</span> Raccoon Restoration · Illinois Licensed Roofing Contractor, Lic.&nbsp;<mark class="todo">[ADD LICENSE #]</mark> · BBB Accredited, A+ Rated</p>
         <a class="back-top" href="#top">Back to top ↑</a>
       </div>
     </div>

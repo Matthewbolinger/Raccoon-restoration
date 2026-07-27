@@ -28,6 +28,8 @@
   --line-strong: rgba(14, 17, 20, .55);
   --line-dark:   rgba(244, 245, 246, .14);
   --grid-dark:   rgba(244, 245, 246, .045);
+  --grid-light:  rgba(14, 17, 20, .035);
+  --concrete-2:  #E4E6E9;   /* second light surface, so the light half has rhythm */
 
   /* type */
   --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
@@ -257,6 +259,20 @@ button { font: inherit; }
   display: flex; flex-direction: column; justify-content: space-between;
   overflow-y: auto;
 }
+/* An explicit way out: the sticky header is stranded while the overlay is
+   open, so the X in the header is not actually reachable. */
+.menu-close {
+  position: absolute; top: 1.5rem; right: 5vw;
+  display: inline-flex; align-items: center; gap: .5rem;
+  min-height: 44px; padding: .5rem .9rem;
+  background: none; color: var(--ink-invert);
+  border: 1px solid var(--line-dark); cursor: pointer;
+  font-family: var(--font-mono); font-size: .75rem;
+  letter-spacing: .18em; text-transform: uppercase;
+}
+.menu-close:hover { color: var(--amber); border-color: var(--amber); }
+.menu-close svg { width: 16px; height: 16px; }
+
 .mobile-nav-list { list-style: none; display: grid; gap: .2rem; }
 .mobile-nav-list a {
   display: flex; align-items: baseline; gap: .8rem;
@@ -418,6 +434,15 @@ section { padding-block: var(--space-xl); }
 
 /* ---------- Services ---------- */
 .services { background: var(--concrete); }
+/* Faint drafting grid on alternating light sections: the dark half had the
+   blueprint grid and the canvas, the concrete half had no surface at all. */
+.process, .areas {
+  background-image:
+    linear-gradient(var(--grid-light) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-light) 1px, transparent 1px);
+  background-size: 68px 68px;
+}
+.check { background: var(--concrete-2); }
 .services-grid { display: grid; gap: 2px; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--line-strong); }
 .service-card {
   background: var(--card); padding: 2rem 1.8rem 2.2rem;
@@ -699,7 +724,12 @@ section { padding-block: var(--space-xl); }
 .field select option { color: var(--ink); background: var(--card); }
 .field textarea { resize: vertical; min-height: 92px; }
 .field input:focus, .field select:focus, .field textarea:focus {
-  outline: none; border-bottom-color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+/* Do NOT set outline:none here — it out-specifies :focus-visible and strips
+   the ring from every control. The underline is a supplement, not the indicator. */
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible {
+  outline: 3px solid var(--focus-ring, var(--ink)); outline-offset: 2px;
 }
 .field input::placeholder, .field textarea::placeholder { color: rgba(244,245,246,.32); }
 .field.invalid input, .field.invalid textarea { border-bottom-color: #E2703A; }
@@ -708,6 +738,13 @@ section { padding-block: var(--space-xl); }
   text-transform: uppercase; color: var(--muted-dark); text-align: center;
 }
 .form-note.sent { color: var(--amber); }
+
+/* A launch-blocking placeholder should be impossible to miss in review. */
+mark.todo {
+  background: #7A1F1F; color: #FFE9E4;
+  font-family: var(--font-mono); font-size: .82em;
+  letter-spacing: .1em; padding: .15em .5em;
+}
 
 /* ---------- Footer ---------- */
 .site-footer { padding-block: var(--space-l) var(--space-m); border-top: 1px solid var(--line-dark); }
@@ -751,10 +788,11 @@ section { padding-block: var(--space-xl); }
 .storm-track { height: 340vh; position: relative; }
 .storm-stage {
   position: sticky; top: 0;
-  height: 100vh; height: 100dvh;   /* dvh keeps the rail clear of mobile chrome */
+  height: 100vh; height: 100svh;   /* svh, not dvh: dvh tracks mobile chrome collapse
+     and stretches the drawing while the backing store catches up */
   /* overflow-y:auto is a zoom safety valve: with no overflow it captures
      nothing, but at 200% text zoom the copy stays reachable instead of clipped */
-  overflow-x: clip; overflow-y: auto;
+  overflow-x: clip; overflow-y: auto; overscroll-behavior-y: contain;
   display: grid; place-items: stretch;
 }
 .storm-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
@@ -858,9 +896,20 @@ section { padding-block: var(--space-xl); }
 .storm-skip:hover, .storm-skip:focus-visible {
   color: var(--amber); border-color: var(--amber);
 }
-@media (max-width: 640px) {
-  .storm-skip { right: 4vw; bottom: 5rem; font-size: .7rem; padding: .5em .8em; }
+
+
+.static-acts {
+  list-style: none; display: grid; gap: var(--space-m);
+  margin-top: var(--space-l); padding-top: var(--space-m);
+  border-top: 1px solid var(--line-dark);
+  grid-template-columns: repeat(auto-fit, minmax(min(26ch, 100%), 1fr));
 }
+.static-acts h3 {
+  font-family: var(--font-display); font-variation-settings: "wdth" 105, "wght" 750;
+  text-transform: uppercase; letter-spacing: .02em;
+  font-size: var(--step-1); color: var(--amber); margin-bottom: .6rem;
+}
+.static-acts p { color: var(--muted-dark); font-size: var(--step--1); line-height: 1.6; }
 
 /* ==========================================================================
    STORM CHECK
@@ -896,7 +945,8 @@ section { padding-block: var(--space-xl); }
   border: 0; border-bottom: 2px solid var(--line-strong); border-radius: 0;
   padding: .5em .1em; letter-spacing: .12em;
 }
-.check-field input[type="text"]:focus { outline: none; border-bottom-color: var(--amber-ink); }
+.check-field input[type="text"]:focus { border-bottom-color: var(--amber-ink); }
+.check-field input[type="text"]:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .check-options { display: grid; gap: .55rem; }
 .check-options label {
   display: flex; align-items: center; gap: .75rem;
@@ -1029,6 +1079,8 @@ section { padding-block: var(--space-xl); }
   /* clear of the fixed 56px call bar, and of each other */
   .storm-rail { left: 4vw; right: 4vw; bottom: 8.4rem; gap: .4rem 1rem; }
   .storm-scroll-hint { display: none; }
+  /* clear of the 56px call bar, which appears at this same breakpoint */
+  .storm-skip { right: 4vw; bottom: 5rem; font-size: .7rem; padding: .5em .8em; }
   .faq-grid { grid-template-columns: 1fr; gap: var(--space-m); }
   .faq-grid .section-head { position: static; }
   .contact-grid { grid-template-columns: 1fr; }

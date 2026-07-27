@@ -68,6 +68,9 @@
       open ? closeMenu(true) : openMenu();
     });
 
+    var closeBtn = menu.querySelector('.menu-close');
+    if (closeBtn) closeBtn.addEventListener('click', function () { closeMenu(true); });
+
     /* Move focus to the destination rather than dropping it on <body>. */
     menu.addEventListener('click', function (e) {
       var link = e.target.closest('a[href^="#"]');
@@ -149,8 +152,11 @@
     }, { threshold: 0.16 }).observe(contact);
   }
 
-  /* ---------- Contact form ---------- */
+  /* ---------- Contact form ----------
+     novalidate is applied HERE, not in markup: a no-JS visitor must keep the
+     browser's own constraint validation, since this replacement never loads. */
   var form = document.getElementById('contact-form');
+  if (form) form.noValidate = true;
   var note = document.getElementById('form-note');
 
   function showError(input, show) {
@@ -232,6 +238,7 @@
      It never invents storm history — it tells you what your own answers mean. */
   var checkTool = document.getElementById('check-tool');
   var checkResult = document.getElementById('check-result');
+  if (checkTool) checkTool.noValidate = true;
 
   // ZIPs actually covered by the Barrington and Spring offices.
   var IL_ZIPS = ['60010', '60011', '60021', '60047', '60067', '60074', '60078',
@@ -286,7 +293,9 @@
           (inIL ? 'Barrington, IL' : 'Spring, TX') + ' service area.</p>'
         : known
           ? '<p class="check-area">We may not cover <strong>' + zip + '</strong> directly — call and we will tell you honestly, and point you to someone good if it is not us.</p>'
-          : '<p class="check-area">Add your ZIP and we will confirm whether you are in our service area.</p>';
+          : zip
+            ? '<p class="check-area">“' + zip.replace(/[<>&]/g, '') + '” isn\'t a complete ZIP code — add all five digits and we will confirm your service area.</p>'
+            : '<p class="check-area">Add your ZIP and we will confirm whether you are in our service area.</p>';
 
       checkResult.innerHTML =
         '<div class="check-card is-' + level + '">' +
@@ -301,9 +310,18 @@
         '</div>';
 
       checkResult.classList.add('has-result');
-      // move focus to the verdict so keyboard users land on the answer
+      /* Bring the answer into view before focusing it. On a phone the submit
+         button sits low, so the result card otherwise renders below the fold
+         with no cue that anything happened. */
       var verdict = checkResult.querySelector('.check-verdict');
-      if (verdict) verdict.focus({ preventScroll: true });
+      if (verdict) {
+        /* Focus the heading and let THAT be the announcement. Writing into a
+           polite live region and focusing inside it in the same tick makes
+           screen readers double-read or truncate. */
+        checkResult.removeAttribute('aria-live');
+        checkResult.scrollIntoView({ block: 'center', behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+        window.setTimeout(function () { verdict.focus(); }, 60);
+      }
     });
   }
 
