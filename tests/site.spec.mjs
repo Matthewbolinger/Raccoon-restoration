@@ -441,6 +441,9 @@ export function makeTests({ chromium, axePath }) {
         controls: [...document.querySelectorAll('.services-rail-button')]
           .map((button) => button.getBoundingClientRect())
           .map((rect) => ({ width: rect.width, height: rect.height })),
+        iconsAreFontIndependent: [...document.querySelectorAll('.services-rail-button')]
+          .every((button) => !button.textContent.trim() &&
+            button.querySelector('.services-arrow[aria-hidden="true"]')),
         initialHeightGap: railRect.height - activeRect.height,
       };
     });
@@ -462,7 +465,8 @@ export function makeTests({ chromium, axePath }) {
     await page.close();
 
     if (initial.cards !== 7 || initial.description !== 'carousel' || initial.tabIndex !== '0' ||
-        !/service 1 of 7/i.test(initial.status) || !initial.prevDisabled) {
+        !/service 1 of 7/i.test(initial.status) || !initial.prevDisabled ||
+        !initial.iconsAreFontIndependent) {
       throw new Error(JSON.stringify(initial));
     }
     if (initial.controls.some((rect) => rect.width < 44 || rect.height < 44)) {

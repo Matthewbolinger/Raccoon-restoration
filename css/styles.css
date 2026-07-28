@@ -1137,8 +1137,13 @@ html.groundline-ready .check-fallback { display: none; }
   .services-rail-button {
     width: 44px; height: 44px; border: 1px solid var(--line-strong);
     background: transparent; color: var(--ink); cursor: pointer;
-    font-size: 1.1rem;
   }
+  .services-arrow {
+    display: block; width: .72rem; height: .72rem; margin: auto;
+    border: solid currentColor; border-width: 0 2px 2px 0;
+  }
+  .services-arrow-prev { transform: rotate(135deg); }
+  .services-arrow-next { transform: rotate(-45deg); }
   .services-rail-button:hover { background: var(--ink); color: var(--card); }
   .services-grid {
     grid-template-columns: minmax(0, 1fr);
