@@ -3,17 +3,17 @@
    A scroll-scrubbed, four-act narrative rendered to a 2D canvas:
      I   Calm      — the house you never think about
      II  Storm     — hail and wind; shingles tear off, damage accrues
-     III Claim     — the scene wireframes into a blueprint; every hit is
-                     annotated as a line-item scope of loss
+     III Scope     — the scene wireframes into a blueprint with illustrative
+                     visible-condition callouts
      IV  Restored  — the assembly rebuilds deck-up and the house comes back
 
-   Deliberately Canvas 2D, not WebGL: the art direction is line drawing, so
-   vector strokes ARE the medium, it holds 60fps on low-end hardware, and it
-   adds no dependency to a page that ships in ~200 KB.
+   Deliberately Canvas 2D, not WebGL: line drawing is the art direction and
+   the sequence adds no browser-runtime dependency. Device-level render
+   performance still requires representative field measurement.
 
-   Progressive enhancement: this file only takes over when canvas is
-   supported and the visitor has not asked for reduced motion. Otherwise the
-   static before/after comparison in the markup is what ships.
+   Progressive enhancement: this file only takes over above 940px when canvas
+   is supported and the visitor has not asked for reduced motion. Otherwise
+   the static before/after comparison in the markup is what ships.
    =========================================================================== */
 (function () {
   'use strict';
@@ -26,8 +26,9 @@
   if (!track || !canvas || !canvas.getContext) return;
 
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var wideLayout = window.matchMedia('(min-width: 941px)');
   var saveData = navigator.connection && navigator.connection.saveData;
-  if (reduceMotion.matches || saveData) return;
+  if (saveData) return;
 
   var ctx = canvas.getContext('2d', { alpha: false });
   if (!ctx) return;
@@ -48,6 +49,8 @@
   var w = 0, h = 0, scale = 1, offX = 0, offY = 0, dpr = 1, narrow = false;
   var progress = 0, rendered = -1, running = false, rafId = 0;
   var lastActIndex = -1;
+  var enhanced = false;
+  var stormObserver = null;
 
   /* ---------- adaptive quality ----------
      The cost here is fill rate, not JS: a 1440x900 stage at DPR 2 repaints
@@ -92,7 +95,7 @@
       offX = w - VW * scale - w * 0.05;
       offY = (h - VH * scale) / 2 - h * 0.03;
     } else {
-      // narrow: copy in the upper third, scene above the rail and the call bar
+      // narrow fallback: copy in the upper third and scene above the act rail
       scale = Math.min((w * 0.86) / VW, (h * 0.40) / VH);
       offX = (w - VW * scale) / 2;
       offY = h - VH * scale - h * 0.20;
@@ -234,29 +237,28 @@
     }
   })();
 
-  /* ---------- scope-of-loss callouts drawn in Act III ---------- */
+  /* ---------- illustrative condition callouts drawn in Act III ---------- */
   // ly values are spaced >= 44 apart per side so labels and their rules never stack
   var CALLOUTS = [
-    { x: 232, y: 196, lx: 44,  ly: 120, t: 'HAIL BRUISING — N SLOPE' },
-    { x: 356, y: 168, lx: 566, ly: 92,  t: 'CREASED TABS — 14 SQ' },
-    { x: 344, y: 140, lx: 566, ly: 150, t: 'RIDGE CAP — 42 LF' },
-    { x: 452, y: 320, lx: 566, ly: 292, t: 'STEP FLASHING FAILURE' },
-    { x: 300, y: 264, lx: 44,  ly: 300, t: 'DECK SATURATION — 2 SHT' },
-    { x: 500, y: 330, lx: 566, ly: 366, t: 'GUTTER — 38 LF' }
+    { x: 232, y: 196, lx: 44,  ly: 120, t: 'HAIL-LIKE SURFACE MARKS' },
+    { x: 356, y: 168, lx: 566, ly: 92,  t: 'CREASED SHINGLE TABS' },
+    { x: 344, y: 140, lx: 566, ly: 150, t: 'RIDGE-CAP CONDITION' },
+    { x: 452, y: 320, lx: 566, ly: 292, t: 'STEP-FLASHING CONDITION' },
+    { x: 300, y: 264, lx: 44,  ly: 300, t: 'DECK MOISTURE INDICATOR' },
+    { x: 500, y: 330, lx: 566, ly: 366, t: 'GUTTER IMPACT MARKS' }
   ];
 
   /* =========================================================================
      SCENE PARTS
      ========================================================================= */
 
-  // reused across frames; only rebuilt when the stage height changes
-  var skyGrad = null, skyGradH = -1;
   var _top = [0, 0, 0], _bot = [0, 0, 0];   // scratch, not reallocated per frame
 
   function drawSky(p) {
     // dusk -> storm -> blueprint -> dawn
-    if (!skyGrad || skyGradH !== h) { skyGrad = ctx.createLinearGradient(0, 0, 0, h); skyGradH = h; }
-    var g = skyGrad;
+    // CanvasGradient stops cannot be cleared, so this must be rebuilt as the
+    // scene colors evolve rather than accumulating stops on a cached gradient.
+    var g = ctx.createLinearGradient(0, 0, 0, h);
     var stormT = seg(p, 0.18, 0.46);
     var bpT = seg(p, 0.48, 0.60);
     var dawnT = seg(p, 0.78, 1);
@@ -489,16 +491,17 @@
 
   function drawTitleBlock(t) {
     if (t <= 0 || narrow) return;
-    var x = 448, y = 506, bw = 282, bh = 50;   // below the ground line, in the sheet margin
-    // opaque: this reads as a real drawing title block sitting on the sheet
+    var x = 448, y = 506, bw = 282, bh = 50;
+    // Keep the example in the sheet margin and explicitly distinguish it from
+    // a scope, diagnosis, or real customer file.
     poly([x, y, x + bw, y, x + bw, y + bh, x, y + bh], MUTED, GRAPHITE, 1, t);
     line([x, y + 19, x + bw, y + 19], MUTED, 0.8, t * 0.6);
     line([x + 178, y, x + 178, y + bh], MUTED, 0.8, t * 0.6);
-    label('SCOPE OF LOSS', x + 10, y + 10, 11, AMBER, t);
-    label('SHEET 03', x + 188, y + 10, 11, MUTED, t);
-    label('RACCOON RESTORATION', x + 10, y + 32, 11, INK, t);
-    label('HAIL / WIND', x + 10, y + 44, 10, MUTED, t);
-    label('REV. A', x + 188, y + 32, 10, MUTED, t);
+    label('CONDITION MAP', x + 10, y + 10, 11, AMBER, t);
+    label('SAMPLE', x + 188, y + 10, 11, MUTED, t);
+    label('ILLUSTRATIVE ONLY', x + 10, y + 32, 11, INK, t);
+    label('NOT A CUSTOMER FILE', x + 10, y + 44, 10, MUTED, t);
+    label('EXAMPLE', x + 188, y + 32, 10, MUTED, t);
   }
 
   /* Act IV — the assembly rebuilds, deck first, sweeping ridge-ward */
@@ -615,14 +618,14 @@
     var stormT = seg(p, 0.20, 0.50);          // storm intensity
     var hailT = seg(p, 0.30, 0.46);
     var blueprintT = seg(p, 0.50, 0.64);      // shading -> blueprint
-    var claimT = seg(p, 0.55, 0.76);          // callouts draw in
-    var retractT = seg(p, 0.76, 0.84);        // callouts retract
+    var scopeT = seg(p, 0.55, 0.76);          // callouts draw in
+    var retractT = seg(p, 0.74, 0.80);        // scope clears before Act IV
     var rebuildT = seg(p, 0.80, 1.0);         // assembly rebuilds
-    var weatherOut = 1 - seg(p, 0.48, 0.58);  // weather clears for the claim
+    var weatherOut = 1 - seg(p, 0.48, 0.58);  // weather clears for the scope
 
     drawSky(p); // opaque gradient — no need to clear first
 
-    drawGrid(blueprintT * (1 - seg(p, 0.86, 1)) );
+    drawGrid(blueprintT * (1 - seg(p, 0.74, 0.80)) );
     drawMoonSun(p);
 
     // house — roof accent drains to grey as damage takes hold, returns in Act IV
@@ -638,13 +641,13 @@
     /* Damage clears on its own ramp, finishing before the assembly does — the
        tarp and boarded window coming off is the first sign of restoration, not
        something that lingers over a half-rebuilt roof. */
-    drawDamage(stormT, seg(p, 0.74, 0.86));
+    drawDamage(stormT, seg(p, 0.72, 0.80));
 
     drawWeather(stormT * weatherOut, hailT * weatherOut, time);
 
-    var callout = claimT * (1 - retractT);
+    var callout = scopeT * (1 - retractT);
     drawCallouts(callout);
-    drawTitleBlock(blueprintT * (1 - seg(p, 0.82, 0.92)));
+    drawTitleBlock(blueprintT * (1 - seg(p, 0.74, 0.80)));
 
     drawRebuild(rebuildT);
 
@@ -722,9 +725,11 @@
   }
 
   function start() {
-    if (running) return;
+    if (running || !enhanced) return;
     running = true;
     startTime = performance.now();
+    lastFrameAt = 0;
+    slowFrames = 0;
     rafId = requestAnimationFrame(frame);
   }
   function stop() {
@@ -733,25 +738,87 @@
     rafId = 0;
   }
 
-  /* ---------- enhance ---------- */
-  track.hidden = false;
-  section.classList.add('is-live');
-  resize();
-  render(0, 0);
-  syncActs(0);
+  /* ---------- responsive enhancement lifecycle ---------- */
+  function alignHashTarget() {
+    if (!location.hash || location.hash.length < 2) return;
+    var target;
+    try { target = document.getElementById(decodeURIComponent(location.hash.slice(1))); }
+    catch (error) { target = null; }
+    if (!target) return;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        var root = document.documentElement;
+        var previous = root.style.scrollBehavior;
+        root.style.scrollBehavior = 'auto';
+        target.scrollIntoView({ block: 'start' });
+        root.style.scrollBehavior = previous;
+      });
+    });
+  }
 
-  var io = new IntersectionObserver(function (entries) {
-    entries.forEach(function (e) { e.isIntersecting ? start() : stop(); });
-  }, { rootMargin: '10% 0px' });
-  io.observe(track);
+  function hashTargetIsVisible() {
+    if (!location.hash || location.hash.length < 2) return false;
+    var target;
+    try { target = document.getElementById(decodeURIComponent(location.hash.slice(1))); }
+    catch (error) { target = null; }
+    if (!target) return false;
+    var rect = target.getBoundingClientRect();
+    return rect.bottom > 0 && rect.top < window.innerHeight;
+  }
+
+  function enable() {
+    if (enhanced || !wideLayout.matches || reduceMotion.matches) return;
+    enhanced = true;
+    track.hidden = false;
+    section.classList.add('is-live');
+    resize();
+    progress = computeProgress();
+    render(progress, 0);
+    syncActs(progress);
+    stormObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) { entry.isIntersecting ? start() : stop(); });
+    }, { rootMargin: '10% 0px' });
+    stormObserver.observe(track);
+  }
+
+  function disable() {
+    if (!enhanced) return;
+    enhanced = false;
+    stop();
+    if (stormObserver) stormObserver.disconnect();
+    stormObserver = null;
+    track.hidden = true;
+    section.classList.remove('is-live');
+    canvas.width = 0;
+    canvas.height = 0;
+    progress = 0;
+    rendered = -1;
+    lastActIndex = -1;
+    syncActs(0);
+  }
+
+  function syncEnhancement(keepHashTarget) {
+    if (wideLayout.matches && !reduceMotion.matches) enable();
+    else disable();
+    if (keepHashTarget) alignHashTarget();
+  }
+
+  syncEnhancement(true);
 
   var resizeTimer;
   window.addEventListener('resize', function () {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function () { resize(); render(progress, 0); }, 120);
+    resizeTimer = setTimeout(function () {
+      if (!enhanced) return;
+      resize();
+      progress = computeProgress();
+      render(progress, 0);
+      syncActs(progress);
+    }, 120);
   }, { passive: true });
 
   document.addEventListener('visibilitychange', function () {
+    if (!enhanced) return;
     document.hidden ? stop() : (isInView() && start());
   });
 
@@ -760,10 +827,13 @@
     return r.bottom > 0 && r.top < window.innerHeight;
   }
 
-  // If the visitor flips on reduced motion mid-session, hand back to the static view.
+  // Breakpoint and motion preference changes exchange the two complete experiences.
+  var onEnhancementModeChange = function () {
+    var keepHashTarget = hashTargetIsVisible();
+    syncEnhancement(keepHashTarget);
+  };
+  if (wideLayout.addEventListener) wideLayout.addEventListener('change', onEnhancementModeChange);
   if (reduceMotion.addEventListener) {
-    reduceMotion.addEventListener('change', function (e) {
-      if (e.matches) { stop(); io.disconnect(); track.hidden = true; section.classList.remove('is-live'); }
-    });
+    reduceMotion.addEventListener('change', onEnhancementModeChange);
   }
 })();
