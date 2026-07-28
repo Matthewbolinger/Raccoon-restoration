@@ -3,8 +3,8 @@
    A scroll-scrubbed, four-act narrative rendered to a 2D canvas:
      I   Calm      — the house you never think about
      II  Storm     — hail and wind; shingles tear off, damage accrues
-     III Scope     — the scene wireframes into a blueprint; every hit is
-                     annotated as a line-item scope of loss
+     III Scope     — the scene wireframes into a blueprint with illustrative
+                     visible-condition callouts
      IV  Restored  — the assembly rebuilds deck-up and the house comes back
 
    Deliberately Canvas 2D, not WebGL: line drawing is the art direction and
@@ -52,12 +52,31 @@
   var enhanced = false;
   var stormObserver = null;
 
+  /* ---------- adaptive quality ----------
+     The cost here is fill rate, not JS: a 1440x900 stage at DPR 2 repaints
+     5.2 Mpx every frame. Batching draw calls barely moved it. So instead of
+     claiming 60fps everywhere, measure and step the backing store down on
+     hardware that can't hold the frame. Layout is unaffected — only raster
+     resolution changes, and the drawing is line art, so it degrades softly. */
+  var quality = 1;
+  var slowFrames = 0, lastFrameAt = 0;
+
+  var TIERS = [1, 0.7, 0.5, 0.36];
+  var tier = 0;
+  function degrade() {
+    if (tier >= TIERS.length - 1) return false;
+    quality = TIERS[++tier];
+    resize();
+    return true;
+  }
+
   /* ---------- responsive sizing ---------- */
   function resize() {
     var rect = canvas.getBoundingClientRect();
     w = Math.max(1, rect.width);
     h = Math.max(1, rect.height);
-    dpr = Math.min(window.devicePixelRatio || 1, 2); // cap DPR: fill rate, not detail
+    // cap DPR (fill rate, not detail), then scale by the measured quality tier
+    dpr = Math.max(0.6, Math.min(window.devicePixelRatio || 1, 2) * quality);
     var bw = Math.round(w * dpr), bh = Math.round(h * dpr);
     if (canvas.width !== bw || canvas.height !== bh) {
       canvas.width = bw;
@@ -96,6 +115,27 @@
   // normalised progress inside a sub-range, eased
   function seg(p, from, to) { return clamp((p - from) / (to - from), 0, 1); }
   function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+
+  /* One beginPath/stroke for a whole set of segments. The house was issuing
+     ~40 separate stroke calls per frame; batching by style cuts that to four. */
+  function strokeSet(segs, color, width, alpha) {
+    if (alpha <= 0) return;
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(0.6, vs(width));
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (var i = 0; i < segs.length; i++) {
+      var pts = segs[i];
+      for (var j = 0; j < pts.length; j += 2) {
+        var X = vx(pts[j]), Y = vy(pts[j + 1]);
+        if (j === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+      }
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
 
   function line(pts, color, width, alpha) {
     if (alpha <= 0) return;
@@ -176,7 +216,9 @@
        at the same coordinates with the same velocity — one shingle, drawn 16x. */
     var seed = 20260724;
     function rnd() {
-      seed = (seed * 1103515245 + 12345) & 0x7FFFFFFF;
+      /* Math.imul, not `*`: 1103515245 * seed overflows 2^53, so plain
+         multiplication is inexact and the low bits come out zero. */
+      seed = (Math.imul(seed, 1103515245) + 12345) & 0x7FFFFFFF;
       return seed / 0x7FFFFFFF;
     }
     for (var k = 0; k < 16; k++) {
@@ -210,20 +252,26 @@
      SCENE PARTS
      ========================================================================= */
 
+  var _top = [0, 0, 0], _bot = [0, 0, 0];   // scratch, not reallocated per frame
+
   function drawSky(p) {
     // dusk -> storm -> blueprint -> dawn
+    // CanvasGradient stops cannot be cleared, so this must be rebuilt as the
+    // scene colors evolve rather than accumulating stops on a cached gradient.
     var g = ctx.createLinearGradient(0, 0, 0, h);
     var stormT = seg(p, 0.18, 0.46);
     var bpT = seg(p, 0.48, 0.60);
     var dawnT = seg(p, 0.78, 1);
 
-    var top = [16, 20, 25], bot = [10, 13, 16];
+    var top = _top, bot = _bot;
+    top[0] = 16; top[1] = 20; top[2] = 25;
+    bot[0] = 10; bot[1] = 13; bot[2] = 16;
     // storm darkens and cools
-    top = [lerp(top[0], 18, stormT), lerp(top[1], 22, stormT), lerp(top[2], 28, stormT)];
+    top[0] = lerp(top[0], 18, stormT); top[1] = lerp(top[1], 22, stormT); top[2] = lerp(top[2], 28, stormT);
     // blueprint flattens to graphite
-    top = [lerp(top[0], 14, bpT), lerp(top[1], 17, bpT), lerp(top[2], 20, bpT)];
+    top[0] = lerp(top[0], 14, bpT); top[1] = lerp(top[1], 17, bpT); top[2] = lerp(top[2], 20, bpT);
     // dawn warms the horizon
-    bot = [lerp(bot[0], 46, dawnT), lerp(bot[1], 33, dawnT), lerp(bot[2], 14, dawnT)];
+    bot[0] = lerp(bot[0], 46, dawnT); bot[1] = lerp(bot[1], 33, dawnT); bot[2] = lerp(bot[2], 14, dawnT);
 
     g.addColorStop(0, 'rgb(' + (top[0] | 0) + ',' + (top[1] | 0) + ',' + (top[2] | 0) + ')');
     g.addColorStop(1, 'rgb(' + (bot[0] | 0) + ',' + (bot[1] | 0) + ',' + (bot[2] | 0) + ')');
@@ -259,64 +307,56 @@
     }
   }
 
+  /* Geometry hoisted to module scope and grouped by stroke style, so a frame
+     is four stroke calls plus two small circles instead of forty. */
+  var HOUSE_BODY = [
+    [30, 502, 730, 502],
+    [178, 252, 178, 500], [422, 252, 422, 500],
+    [150, 252, 178, 252], [422, 252, 450, 252],
+    [166, 252, 300, 130, 434, 252],
+    [340, 131, 340, 154], [376, 131, 376, 187],
+    [334, 123, 382, 123, 382, 131, 334, 131, 334, 123],
+    // upper windows + sills
+    [212, 288, 274, 288, 274, 370, 212, 370, 212, 288], [206, 372, 280, 372],
+    [326, 288, 388, 288, 388, 370, 326, 370, 326, 288], [320, 372, 394, 372],
+    // door
+    [272, 398, 328, 398, 328, 500, 272, 500, 272, 398],
+    [279, 412, 321, 412, 321, 500, 279, 500],
+    // lower windows
+    [200, 408, 254, 408, 254, 484, 200, 484, 200, 408],
+    [346, 408, 400, 408, 400, 484, 346, 484, 346, 408],
+    // wing + garage
+    [450, 320, 450, 500], [648, 330, 648, 500],
+    [450, 322, 545, 272, 648, 328],
+    [486, 384, 604, 384, 604, 500, 486, 500, 486, 384]
+  ];
+  var HOUSE_THIN = [
+    [281, 206, 319, 206], [300, 187, 300, 225],
+    [243, 288, 243, 370], [212, 329, 274, 329],
+    [357, 288, 357, 370], [326, 329, 388, 329],
+    [272, 412, 328, 412],
+    [227, 408, 227, 484], [200, 446, 254, 446],
+    [373, 408, 373, 484], [346, 446, 400, 446],
+    [486, 413, 604, 413], [486, 442, 604, 442], [486, 471, 604, 471]
+  ];
+  var HOUSE_TREES = [
+    [96, 502, 96, 470], [96, 414, 126, 470, 66, 470, 96, 414],
+    [96, 372, 120, 438, 72, 438, 96, 372],
+    [700, 502, 700, 478], [700, 436, 722, 478, 678, 478, 700, 436]
+  ];
+  var HOUSE_ROOF = [
+    [150, 252, 300, 116, 450, 252],
+    [436, 322, 545, 262, 662, 326]
+  ];
+
   function drawHouse(p, inkColor, roofColor, alpha) {
     if (alpha <= 0) return;
-    var t = 2.2;
-
-    line([30, 502, 730, 502], inkColor, 2, alpha);                       // ground
-    line([178, 252, 178, 500], inkColor, t, alpha);
-    line([422, 252, 422, 500], inkColor, t, alpha);
-    line([150, 252, 178, 252], inkColor, t, alpha);
-    line([422, 252, 450, 252], inkColor, t, alpha);
-
-    // roof (the hero line — carries the accent)
-    line([150, 252, 300, 116, 450, 252], roofColor, 3.4, alpha);
-    line([166, 252, 300, 130, 434, 252], inkColor, t, alpha);
-
-    // chimney
-    line([340, 131, 340, 154], inkColor, t, alpha);
-    line([376, 131, 376, 187], inkColor, t, alpha);
-    poly([334, 123, 382, 123, 382, 131, 334, 131], inkColor, null, t, alpha);
-
-    // attic light
-    circle(300, 206, 19, inkColor, null, t, alpha);
-    line([281, 206, 319, 206], inkColor, 1.2, alpha * 0.8);
-    line([300, 187, 300, 225], inkColor, 1.2, alpha * 0.8);
-
-    // upper windows
-    [212, 326].forEach(function (x) {
-      rect(x, 288, 62, 82, inkColor, t, alpha);
-      line([x + 31, 288, x + 31, 370], inkColor, 1.2, alpha * 0.8);
-      line([x, 329, x + 62, 329], inkColor, 1.2, alpha * 0.8);
-      line([x - 6, 372, x + 68, 372], inkColor, t, alpha);
-    });
-
-    // door
-    rect(272, 398, 56, 102, inkColor, t, alpha);
-    rect(279, 412, 42, 88, inkColor, 1.4, alpha * 0.9);
+    strokeSet(HOUSE_BODY, inkColor, 2.2, alpha);
+    strokeSet(HOUSE_THIN, inkColor, 1.2, alpha * 0.8);
+    strokeSet(HOUSE_TREES, inkColor, 1.6, alpha * 0.85);
+    strokeSet(HOUSE_ROOF, roofColor, 3.4, alpha);
+    circle(300, 206, 19, inkColor, null, 2.2, alpha);   // attic light
     circle(315, 458, 2.4, inkColor, null, 1.2, alpha * 0.8);
-
-    // lower windows
-    [200, 346].forEach(function (x) {
-      rect(x, 408, 54, 76, inkColor, t, alpha);
-      line([x + 27, 408, x + 27, 484], inkColor, 1.2, alpha * 0.8);
-      line([x, 446, x + 54, 446], inkColor, 1.2, alpha * 0.8);
-    });
-
-    // wing + garage
-    line([450, 320, 450, 500], inkColor, t, alpha);
-    line([648, 330, 648, 500], inkColor, t, alpha);
-    line([436, 322, 545, 262, 662, 326], roofColor, 3.4, alpha);
-    line([450, 322, 545, 272, 648, 328], inkColor, t, alpha);
-    rect(486, 384, 118, 116, inkColor, t, alpha);
-    [413, 442, 471].forEach(function (y) { line([486, y, 604, y], inkColor, 1.2, alpha * 0.75); });
-
-    // pines
-    line([96, 502, 96, 470], inkColor, 1.6, alpha * 0.85);
-    poly([96, 414, 126, 470, 66, 470], inkColor, null, 1.6, alpha * 0.85);
-    poly([96, 372, 120, 438, 72, 438], inkColor, null, 1.6, alpha * 0.85);
-    line([700, 502, 700, 478], inkColor, 1.6, alpha * 0.85);
-    poly([700, 436, 722, 478, 678, 478], inkColor, null, 1.6, alpha * 0.85);
   }
 
   function drawShingleCourses(p, color, alpha) {
@@ -392,7 +432,7 @@
 
   function drawWeather(rainT, hailT, time) {
     if (rainT <= 0) return;
-    var count = Math.floor(RAIN.length * rainT);
+    var count = Math.floor(RAIN.length * rainT * quality);
     ctx.globalAlpha = rainT * 0.55;
     ctx.strokeStyle = '#7A8896';
     ctx.lineWidth = Math.max(0.6, vs(1.5));
@@ -408,17 +448,19 @@
     ctx.globalAlpha = 1;
 
     if (hailT > 0) {
-      var hc = Math.floor(HAIL.length * hailT);
+      var hc = Math.floor(HAIL.length * hailT * quality);
       ctx.globalAlpha = hailT * 0.85;
       ctx.fillStyle = '#D6DCE2';
+      ctx.beginPath();                       // one path for every hailstone
       for (var k = 0; k < hc; k++) {
-        var s = HAIL[k];
-        var hy = wrap(s.y + time * s.sp * 60, VH + 60) - 30;
-        var hx = wrap(s.x - time * 26 + Math.sin(time * 2 + s.sw) * 10, VW + 100) - 50;
-        ctx.beginPath();
-        ctx.arc(vx(hx), vy(hy), vs(s.r), 0, Math.PI * 2);
-        ctx.fill();
+        var st = HAIL[k];
+        var hy = wrap(st.y + time * st.sp * 60, VH + 60) - 30;
+        var hx = wrap(st.x - time * 26 + Math.sin(time * 2 + st.sw) * 10, VW + 100) - 50;
+        var hr = vs(st.r);
+        ctx.moveTo(vx(hx) + hr, vy(hy));
+        ctx.arc(vx(hx), vy(hy), hr, 0, Math.PI * 2);
       }
+      ctx.fill();
       ctx.globalAlpha = 1;
     }
   }
@@ -449,27 +491,31 @@
 
   function drawTitleBlock(t) {
     if (t <= 0 || narrow) return;
-    var x = 470, y = 452, bw = 260, bh = 62;
-    // Opaque title block; explicitly marked as an illustration, not a job file.
+    var x = 448, y = 506, bw = 282, bh = 50;
+    // Keep the example in the sheet margin and explicitly distinguish it from
+    // a scope, diagnosis, or real customer file.
     poly([x, y, x + bw, y, x + bw, y + bh, x, y + bh], MUTED, GRAPHITE, 1, t);
-    line([x, y + 22, x + bw, y + 22], MUTED, 0.8, t * 0.6);
-    line([x + 168, y, x + 168, y + bh], MUTED, 0.8, t * 0.6);
-    label('CONDITION MAP', x + 10, y + 11, 11, AMBER, t);
-    label('SAMPLE', x + 178, y + 11, 11, MUTED, t);
-    label('ILLUSTRATIVE ONLY', x + 10, y + 38, 11, INK, t);
-    label('NOT A CUSTOMER FILE', x + 10, y + 52, 10, MUTED, t);
-    label('EXAMPLE', x + 178, y + 38, 10, MUTED, t);
+    line([x, y + 19, x + bw, y + 19], MUTED, 0.8, t * 0.6);
+    line([x + 178, y, x + 178, y + bh], MUTED, 0.8, t * 0.6);
+    label('CONDITION MAP', x + 10, y + 10, 11, AMBER, t);
+    label('SAMPLE', x + 188, y + 10, 11, MUTED, t);
+    label('ILLUSTRATIVE ONLY', x + 10, y + 32, 11, INK, t);
+    label('NOT A CUSTOMER FILE', x + 10, y + 44, 10, MUTED, t);
+    label('EXAMPLE', x + 188, y + 32, 10, MUTED, t);
   }
 
   /* Act IV — the assembly rebuilds, deck first, sweeping ridge-ward */
+  // constant table, hoisted out of the render loop
+  var LAYERS = [
+    { from: 0.00, to: 0.30, off: 26, color: MUTED,  name: 'DECKING' },
+    { from: 0.22, to: 0.50, off: 19, color: '#8FA0AE', name: 'ICE & WATER' },
+    { from: 0.44, to: 0.72, off: 12, color: '#C4CDD5', name: 'UNDERLAYMENT' },
+    { from: 0.66, to: 1.00, off: 0,  color: AMBER,   name: 'SHINGLES' }
+  ];
+
   function drawRebuild(t) {
     if (t <= 0) return;
-    var layers = [
-      { from: 0.00, to: 0.30, off: 26, color: MUTED,  name: 'DECKING' },
-      { from: 0.22, to: 0.50, off: 19, color: '#8FA0AE', name: 'ICE & WATER' },
-      { from: 0.44, to: 0.72, off: 12, color: '#C4CDD5', name: 'UNDERLAYMENT' },
-      { from: 0.66, to: 1.00, off: 0,  color: AMBER,   name: 'SHINGLES' }
-    ];
+    var layers = LAYERS;
     // once the shingles are on, the sub-layers are buried — fade them out so
     // the sequence resolves to a clean finished roof rather than scaffolding
     var settle = 1 - seg(t, 0.86, 1);
@@ -499,54 +545,70 @@
     }
     if (active) {
       var la = 1 - Math.abs((t - (active.from + active.to) / 2) / ((active.to - active.from) / 2 + 0.08));
-      // sits well clear of the ridge, where the raccoon lands at the end
-      label(active.name, 300, 52, 13, active.color, clamp(la, 0, 1) * settle, 'center');
+      /* Off the ridge axis and left-aligned: centred at x=300 it sat directly
+         behind the raccoon that perches on the ridge at the end of Act IV. */
+      label(active.name, 96, 132, 13, active.color, clamp(la, 0, 1) * settle, 'left');
     }
   }
 
-  /* The raccoon: sheltering under the eave in the storm, on the ridge at the end.
-     Drawn at the same line weight as the house so it reads as part of the same
-     illustration rather than a sticker on top of it. */
+  /* The raccoon: shelters against the wall mid-storm, tops out on the finished
+     ridge at the end. Drawn to actually read as a RACCOON — small rounded ears,
+     an eye-band mask inset from the head edge, and a bushy ringed tail. An
+     earlier pass with triangular ears, a full-width amber bar and a hook tail
+     read as a cat. Opaque fills so it sits in front of the roof it perches on. */
   function drawRaccoon(x, y, s, alpha, color) {
     if (alpha <= 0) return;
     var c = color || INK;
     var lw = 2.0;
 
-    // haunches + back
-    poly([x - 10 * s, y, x + 9 * s, y, x + 11 * s, y - 9 * s, x + 7 * s, y - 15 * s,
-          x - 7 * s, y - 15 * s, x - 11 * s, y - 8 * s], c, null, lw, alpha);
-    // front legs
-    line([x - 5 * s, y - 4 * s, x - 5 * s, y], c, lw, alpha * 0.9);
-    line([x + 3 * s, y - 4 * s, x + 3 * s, y], c, lw, alpha * 0.9);
-
-    // head with a snout, not a plain circle
-    poly([x - 7 * s, y - 18 * s, x - 4 * s, y - 24 * s, x + 4 * s, y - 24 * s,
-          x + 7 * s, y - 18 * s, x + 4 * s, y - 13 * s, x - 4 * s, y - 13 * s],
-         c, null, lw, alpha);
-    line([x, y - 13 * s, x, y - 15.5 * s], c, lw, alpha * 0.8);   // muzzle line
-    circle(x, y - 12.4 * s, 0.9 * s, null, c, 0, alpha);           // nose
-
-    // ears
-    poly([x - 7 * s, y - 22 * s, x - 3 * s, y - 24.5 * s, x - 5.5 * s, y - 28 * s], c, null, lw, alpha);
-    poly([x + 3 * s, y - 24.5 * s, x + 7 * s, y - 22 * s, x + 5.5 * s, y - 28 * s], c, null, lw, alpha);
-
-    // the mask — the brand mark at raccoon scale
-    line([x - 7 * s, y - 19 * s, x + 7 * s, y - 19 * s], AMBER, 4.6 * s, alpha);
-    circle(x - 3.2 * s, y - 19 * s, 1.1 * s, null, GRAPHITE, 0, alpha);
-    circle(x + 3.2 * s, y - 19 * s, 1.1 * s, null, GRAPHITE, 0, alpha);
-
-    // ringed tail
+    // --- bushy ringed tail (behind the body)
     ctx.globalAlpha = alpha;
     ctx.strokeStyle = c;
-    ctx.lineWidth = Math.max(0.8, vs(lw * 1.6 * s));
     ctx.lineCap = 'round';
+    ctx.lineWidth = Math.max(1, vs(5.4 * s));
     ctx.beginPath();
-    ctx.moveTo(vx(x + 10 * s), vy(y - 4 * s));
-    ctx.quadraticCurveTo(vx(x + 22 * s), vy(y - 6 * s), vx(x + 21 * s), vy(y - 18 * s));
+    ctx.moveTo(vx(x + 8 * s), vy(y - 6 * s));
+    ctx.bezierCurveTo(vx(x + 21 * s), vy(y - 4 * s),
+                      vx(x + 25 * s), vy(y - 15 * s),
+                      vx(x + 18 * s), vy(y - 22 * s));
     ctx.stroke();
     ctx.globalAlpha = 1;
-    line([x + 15.5 * s, y - 3.2 * s, x + 17 * s, y - 7.4 * s], AMBER, lw * 0.9 * s, alpha * 0.9);
-    line([x + 21.6 * s, y - 9 * s, x + 18.4 * s, y - 11.4 * s], AMBER, lw * 0.9 * s, alpha * 0.9);
+    [[13.2, -6.9, 15.4, -2.9], [19.8, -9.6, 22.9, -7.2], [20.6, -16.4, 23.4, -13.4]]
+      .forEach(function (r) {
+        line([x + r[0] * s, y + r[1] * s, x + r[2] * s, y + r[3] * s], AMBER, 2.3 * s, alpha * 0.95);
+      });
+
+    // --- low hunched body
+    poly([x - 9 * s, y, x + 9 * s, y, x + 10 * s, y - 8 * s, x + 6 * s, y - 14 * s,
+          x - 6 * s, y - 14 * s, x - 10 * s, y - 7 * s], c, GRAPHITE, lw, alpha);
+    line([x - 5 * s, y - 3.5 * s, x - 5 * s, y], c, lw, alpha * 0.9);
+    line([x + 3 * s, y - 3.5 * s, x + 3 * s, y], c, lw, alpha * 0.9);
+
+    // --- rounded head with a tapered snout
+    poly([x - 8.6 * s, y - 21 * s, x - 6.8 * s, y - 26.6 * s, x - 1 * s, y - 28.4 * s,
+          x + 5.6 * s, y - 26.6 * s, x + 7.8 * s, y - 21 * s, x + 5 * s, y - 15.4 * s,
+          x - 4 * s, y - 14.8 * s, x - 7.8 * s, y - 17.2 * s], c, GRAPHITE, lw, alpha);
+    line([x - 7.8 * s, y - 17.2 * s, x - 10.6 * s, y - 15.6 * s], c, lw, alpha);
+    circle(x - 10.8 * s, y - 15.4 * s, 1.1 * s, null, c, 0, alpha);
+
+    // --- small ROUNDED ears (triangular ones read feline)
+    circle(x - 6.0 * s, y - 27.0 * s, 2.9 * s, c, GRAPHITE, lw * 0.85, alpha);
+    circle(x + 4.4 * s, y - 27.0 * s, 2.9 * s, c, GRAPHITE, lw * 0.85, alpha);
+
+    // --- the mask: an eye BAND inset from the head edges, not a full-width bar.
+    //     This is the brand mark reused at raccoon scale.
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = AMBER;
+    ctx.beginPath();
+    ctx.moveTo(vx(x - 7.8 * s), vy(y - 22.6 * s));
+    ctx.lineTo(vx(x + 6.8 * s), vy(y - 23.4 * s));
+    ctx.lineTo(vx(x + 6.2 * s), vy(y - 19.2 * s));
+    ctx.lineTo(vx(x - 7.4 * s), vy(y - 18.4 * s));
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    circle(x - 4.0 * s, y - 20.8 * s, 1.15 * s, null, GRAPHITE, 0, alpha);
+    circle(x + 2.6 * s, y - 21.2 * s, 1.15 * s, null, GRAPHITE, 0, alpha);
   }
 
   /* =========================================================================
@@ -594,7 +656,7 @@
     var shelter = seg(p, 0.28, 0.38) * (1 - seg(p, 0.52, 0.60));
     if (shelter > 0) drawRaccoon(140, 500, 2.3, shelter);
     var perched = seg(p, 0.88, 0.96);
-    if (perched > 0) drawRaccoon(300, 108, 2.1, perched);
+    if (perched > 0) drawRaccoon(300, 116, 2.0, perched);
 
     // final stamp
     var stamp = seg(p, 0.94, 1);
@@ -641,8 +703,17 @@
   var startTime = performance.now();
   function frame() {
     if (!running) return;
+    var nowT = performance.now();
+    // step quality down after a sustained run of long frames
+    if (lastFrameAt) {
+      var dt = nowT - lastFrameAt;
+      if (dt > 21) { if (++slowFrames >= 10) { slowFrames = 0; degrade(); } }
+      else if (slowFrames > 0) { slowFrames--; }
+    }
+    lastFrameAt = nowT;
+
     progress = computeProgress();
-    var time = (performance.now() - startTime) / 1000;
+    var time = (nowT - startTime) / 1000;
     // always redraw while weather is on screen; otherwise only on change
     var animating = progress > 0.18 && progress < 0.60;
     if (animating || Math.abs(progress - rendered) > 0.0005) {
@@ -657,6 +728,8 @@
     if (running || !enhanced) return;
     running = true;
     startTime = performance.now();
+    lastFrameAt = 0;
+    slowFrames = 0;
     rafId = requestAnimationFrame(frame);
   }
   function stop() {

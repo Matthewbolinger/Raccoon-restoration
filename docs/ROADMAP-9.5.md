@@ -53,7 +53,7 @@ evidence references. Every fact approved for public use is updated to `verified`
 The code-controllable foundation and responsive remediation are complete in the local
 candidate:
 
-- 77/77 automated checks pass across Chromium, Firefox, and WebKit;
+- 80/80 automated checks pass across Chromium, Firefox, and WebKit;
 - the exact supplied production raster lockup is used without redrawing it;
 - mobile and tablet avoid fixed-content collisions and document-level overflow;
 - the seven-service register, four-route Groundline brief, direct call path,

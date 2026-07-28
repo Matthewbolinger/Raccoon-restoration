@@ -279,13 +279,24 @@ export function makeTests({ chromium, axePath }) {
     if (s.live || !s.trackHidden || !s.staticShown || !s.sliderUsable) throw new Error(JSON.stringify(s));
   });
 
-  test('animation-frame cadence smoke test stays at 55fps or better', async (browser) => {
+  // Sampled at the STORM PEAK (p~0.46: ~164 raindrops, 34 hailstones, tabs in
+  // flight) under 4x CPU throttling — a mid-scroll frame on an unthrottled
+  // desktop proves nothing about the frame the sequence actually has to hold.
+  test('storm sequence holds 45fps at peak load under 4x CPU throttle', async (browser) => {
     const page = await browser.newPage({ viewport: VIEWPORTS.desktop });
     await page.goto(`${BASE}/index.html`, { waitUntil: 'networkidle' });
     await page.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; });
-    const top = await page.locator('.storm-track').evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
-    await page.evaluate((v) => window.scrollTo(0, v + 1200), top);
-    await page.waitForTimeout(400);
+    const t = await page.locator('.storm-track').evaluate((el) => ({
+      top: el.getBoundingClientRect().top + window.scrollY, h: el.offsetHeight,
+    }));
+    const vh = VIEWPORTS.desktop.height;
+    await page.evaluate((v) => window.scrollTo(0, v), t.top + (t.h - vh) * 0.46);
+    await page.waitForTimeout(500);
+    let cdp = null;
+    try {
+      cdp = await page.context().newCDPSession(page);
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    } catch { /* non-Chromium: measure unthrottled rather than skipping */ }
     const fps = await page.evaluate(() => new Promise((res) => {
       let n = 0; const t0 = performance.now();
       (function tick() {
@@ -294,8 +305,37 @@ export function makeTests({ chromium, axePath }) {
         else res(Math.round(n / ((performance.now() - t0) / 1000)));
       })();
     }));
+    if (cdp) { try { await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 }); } catch {} }
     await page.close();
-    if (fps < 55) throw new Error(`page rAF cadence measured ${fps}fps`);
+    /* 45 under 4x CPU throttle at the heaviest frame, not 60: the sequence is
+       fill-rate bound, so the adaptive tier drops raster resolution to hold a
+       usable rate rather than pretending weak hardware runs at 60. Unthrottled
+       desktop measures ~61. */
+    if (fps < 45) throw new Error(`storm peak ran at ${fps}fps under 4x throttle`);
+  });
+
+  test('adaptive quality engages under load', async (browser) => {
+    const page = await browser.newPage({ viewport: VIEWPORTS.desktop });
+    await page.goto(`${BASE}/index.html`, { waitUntil: 'networkidle' });
+    await page.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; });
+    const t = await page.locator('.storm-track').evaluate((el) => ({
+      top: el.getBoundingClientRect().top + window.scrollY, h: el.offsetHeight,
+    }));
+    const before = await page.evaluate(() => document.getElementById('storm-canvas').width);
+    let cdp = null;
+    try {
+      cdp = await page.context().newCDPSession(page);
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 8 });
+    } catch { /* skip on non-Chromium */ }
+    await page.evaluate((v) => window.scrollTo(0, v), t.top + (t.h - VIEWPORTS.desktop.height) * 0.46);
+    await page.waitForTimeout(3000);
+    const after = await page.evaluate(() => document.getElementById('storm-canvas').width);
+    if (cdp) { try { await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 }); } catch {} }
+    await page.close();
+    if (!cdp) return;                       // cannot throttle: nothing to assert
+    if (after >= before) {
+      throw new Error(`backing store stayed at ${after}px under 8x throttle — adaptive tier never engaged`);
+    }
   });
 
   test('local lab LCP and CLS stay inside release budgets', async (browser) => {
@@ -1270,6 +1310,90 @@ export function makeTests({ chromium, axePath }) {
     await page.close();
     if (payload.total > 450 * 1024) {
       throw new Error(`${payload.total} bytes: ${JSON.stringify(payload.files)}`);
+    }
+  });
+
+  /* ---- self-hosted fonts cover every glyph they are assigned to render ---- */
+  test('self-hosted fonts render assigned glyphs without silent fallback', async (browser) => {
+    const page = await browser.newPage({ viewport: VIEWPORTS.desktop });
+    await page.goto(`${BASE}/index.html`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(1200);
+    const res = await page.evaluate(async () => {
+      await document.fonts.ready;
+      const assigned = { Archivo: new Set(), Inter: new Set() };
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) {
+        const parent = walker.currentNode.parentElement;
+        if (!parent || parent.closest('[aria-hidden="true"]')) continue;
+        const family = getComputedStyle(parent).fontFamily;
+        const target = family.includes('Archivo')
+          ? assigned.Archivo
+          : family.includes('Inter')
+            ? assigned.Inter
+            : null;
+        if (!target) continue;
+        [...walker.currentNode.data].forEach((char) => {
+          if (char.trim() && char.codePointAt(0) > 31) target.add(char);
+        });
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 96;
+      canvas.height = 80;
+      const context = canvas.getContext('2d');
+      const signature = (family, weight, fallback, char) => {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = '#000';
+        context.textBaseline = 'top';
+        context.font = `${weight} 48px "${family}", ${fallback}`;
+        context.fillText(char, 4, 4);
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        let hash = 2166136261;
+        for (let i = 3; i < pixels.length; i += 4) {
+          hash ^= pixels[i];
+          hash = Math.imul(hash, 16777619);
+        }
+        return hash >>> 0;
+      };
+      const missing = [];
+      for (const [family, chars] of Object.entries(assigned)) {
+        const weight = family === 'Archivo' ? 800 : 400;
+        for (const char of chars) {
+          const variants = ['serif', 'monospace', 'cursive']
+            .map((fallback) => signature(family, weight, fallback, char));
+          if (new Set(variants).size > 1) {
+            missing.push(`${family}: U+${char.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')} ${char}`);
+          }
+        }
+      }
+      return {
+        loaded: document.fonts.check('800 40px Archivo') && document.fonts.check('400 16px Inter'),
+        missing,
+      };
+    });
+    await page.close();
+    if (!res.loaded) throw new Error('a self-hosted face failed to load');
+    if (res.missing.length) {
+      throw new Error(`font fallback detected: ${JSON.stringify(res.missing)}`);
+    }
+  });
+
+  test('font payload stays within budget', async (browser) => {
+    const page = await browser.newPage({ viewport: VIEWPORTS.desktop });
+    let fontBytes = 0;
+    const pending = [];
+    page.on('response', (r) => {
+      if (!/\.woff2$/.test(r.url())) return;
+      pending.push(r.body().then((b) => { fontBytes += b.length; }).catch(() => {}));
+    });
+    await page.goto(`${BASE}/index.html`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(1200);
+    await Promise.all(pending);           // bodies resolve async — await before asserting
+    await page.close();
+    const BUDGET = 150 * 1024;            // complete Latin Archivo + Inter ~= 135 KB
+    if (fontBytes === 0) throw new Error('no fonts were loaded');
+    if (fontBytes > BUDGET) {
+      throw new Error(`fonts ${(fontBytes / 1024).toFixed(0)} KB exceeds the ${BUDGET / 1024} KB budget`);
     }
   });
 

@@ -25,7 +25,7 @@ platform—not from code.
 | Design, usability, and creative execution | **9.5** | **8.4** | No reproduced code-fixable defect; real project media and customer voice remain the content ceiling |
 | Engineering and release quality | **9.5** | **6.4** | Draft PR recommended; production deployment blocked by external launch systems and evidence |
 | Public truth and compliance | **9.9** | **9.9** | No remaining production-visible, code-fixable truth defect |
-| Automated release gate | **10.0** | Local evidence only | **77/77** checks pass |
+| Automated release gate | **10.0** | Local evidence only | **80/80** checks pass |
 
 **Self-grade for the completed repository scope: 9.6/10.**
 
@@ -62,11 +62,14 @@ between a strong implementation and an unverified production operation.
 - The only public credentials are linked to the regulator or issuer and dated.
 - Responsive menus, service controls, deep links, zoom, forced colors, reduced motion,
   and no-JavaScript failure paths are covered.
+- The canvas renderer adapts its backing-store quality under sustained frame pressure,
+  and self-hosted font coverage is checked against silent per-glyph fallback.
+- Static-host and Apache header policies avoid immutable caching for unversioned files.
 - Runtime, dependency resolution, and CI browser coverage are pinned.
 
 ## Validation evidence
 
-The final local gate passed **77/77** checks across Chromium, Firefox, and WebKit,
+The final local gate passed **80/80** checks across Chromium, Firefox, and WebKit,
 including:
 
 - 320 px reflow and horizontal-overflow checks;
@@ -77,8 +80,9 @@ including:
 - all Groundline routes and transfer behavior;
 - form validation, honest delivery wording, and mailto size limits;
 - reduced-motion, Save-Data-aligned loading, and live breakpoint transitions;
+- peak Storm Sequence cadence under 4× CPU throttling and adaptive-quality fallback;
 - no-JavaScript and injected-initialization-failure fallbacks;
-- first-load asset and local LCP/CLS budgets;
+- first-load asset, complete-font, font-fallback, and local LCP/CLS budgets;
 - axe-core checks for desktop, reflow, mobile, open menu, reduced motion, Groundline,
   forced colors, and the 404 page;
 - truth, credential, metadata, structured-data, and logo guards.
@@ -121,8 +125,8 @@ Production remains a deliberate **no-go** until the accountable owners clear:
    availability, offer terms, warranty terms, and counsel-approved claim boundaries;
 4. official vector identity assets, color specifications, and derivative permissions;
 5. rights-cleared project media, outcome records, and approved customer voice;
-6. hosting, DNS, TLS, security headers, caching, monitoring, analytics ownership,
-   rollback, and deployed conversion tests;
+6. hosting, DNS, TLS, validation of applied security/cache headers, monitoring,
+   analytics ownership, rollback, and deployed conversion tests;
 7. manual VoiceOver, NVDA, TalkBack, and representative physical-device checks; and
 8. staging and field performance evidence.
 

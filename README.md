@@ -21,6 +21,8 @@ The current build:
 - makes reveal motion fail open if JavaScript enhancement cannot initialize;
 - uses a compact responsive service register, a static mobile restoration comparison,
   and the desktop-only Storm Sequence;
+- adapts the Storm Sequence raster quality under sustained frame pressure and ships
+  host-ready security and revalidation headers for unversioned assets;
 - provides a deterministic four-route Groundline action brief without diagnosing,
   clearing, or making a coverage decision; and
 - records every blocked fact and owner decision in
@@ -62,6 +64,7 @@ assets/fonts/       self-hosted Archivo and Inter variable fonts
 assets/             production logo reference, provisional icon set, and social card
 docs/               truth register, owner-input checklist, and brand-asset standard
 tests/              Playwright regression and accessibility suite
+.htaccess · _headers security and cache policy for common static hosts
 robots.txt · sitemap.xml · site.webmanifest
 ```
 
@@ -85,11 +88,13 @@ The Playwright suite guards:
 - no fictional reviews, unsupported claims, or speculative schema;
 - no-JavaScript content visibility and reveal fail-open behavior;
 - reduced-motion and Storm Sequence enhancement gates;
+- throttled peak-load cadence, adaptive canvas quality, and local LCP/CLS budgets;
 - mobile navigation focus handling and non-overlapping tap-to-call behavior;
 - the responsive seven-service rail and all four Groundline result routes;
 - live breakpoint changes, deep links, no-JavaScript alternatives, and menu cleanup;
 - trim-aware contact validation, sensible phone digits, and mailto size limits;
 - scroll-height, first-load payload, social metadata, and verified-credential guards;
+- self-hosted-font fallback and payload budgets; and
 - launch assets, structured-data quarantine, and axe-core coverage across key states.
 
 ```bash
@@ -98,7 +103,7 @@ npx playwright install chromium firefox webkit
 npm test
 ```
 
-The current local gate is **77/77 checks passing** across Chromium, Firefox, and
+The current local gate is **80/80 checks passing** across Chromium, Firefox, and
 WebKit. CI uses the committed lockfile and runs the same browser coverage on every
 push and pull request.
 
